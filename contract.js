@@ -114,11 +114,11 @@ let contract = null;
 // ===============================
 
 
-async function switchToEthereum(){
+async function switchToEthereum(injected){
 
 
     const current =
-    await window.ethereum.request({
+    await injected.request({
 
         method:"eth_chainId"
 
@@ -134,7 +134,7 @@ async function switchToEthereum(){
     if(current !== "0x1"){
 
 
-        await window.ethereum.request({
+        await injected.request({
 
             method:"wallet_switchEthereumChain",
 
@@ -157,13 +157,39 @@ async function switchToEthereum(){
 // ===============================
 
 
+function getInjectedProvider(){
+
+    if(!window.ethereum){
+        return null;
+    }
+
+    // Some wallet browsers/extensions inject multiple providers
+    // into window.ethereum.providers when more than one wallet
+    // is installed. Fall back to that list if the top-level
+    // window.ethereum object itself isn't usable.
+    if(
+        Array.isArray(window.ethereum.providers) &&
+        window.ethereum.providers.length > 0
+    ){
+
+        return window.ethereum.providers[0];
+
+    }
+
+    return window.ethereum;
+
+}
+
+
 async function connectWallet(){
 
 
-    if(!window.ethereum){
+    const injected = getInjectedProvider();
+
+    if(!injected){
 
         throw new Error(
-            "MetaMask not installed"
+            "No Ethereum wallet found. Open this page inside your wallet's browser, or install a wallet extension (MetaMask, TokenPocket, Trust Wallet, Rabby, Coinbase Wallet, etc.)."
         );
 
     }
@@ -173,13 +199,13 @@ async function connectWallet(){
     // IMPORTANT
     // switch BEFORE creating provider
 
-    await switchToEthereum();
+    await switchToEthereum(injected);
 
 
 
     provider =
     new ethers.BrowserProvider(
-        window.ethereum
+        injected
     );
 
 
@@ -331,6 +357,15 @@ async function getTotalSupply(){
 async function pushTo(receiver){
 
 
+    if(!provider || !contract){
+
+        throw new Error(
+            "Connect your wallet first."
+        );
+
+    }
+
+
 
     const network =
     await provider.getNetwork();
@@ -393,6 +428,15 @@ async function pushTo(receiver){
 
 
 async function pushForMe(){
+
+
+    if(!provider || !contract){
+
+        throw new Error(
+            "Connect your wallet first."
+        );
+
+    }
 
 
 
