@@ -66,7 +66,7 @@ async function refreshWallet(){
     push.toString();
 
     document.getElementById("effective").innerText =
-    (trust - push).toString();
+    (BigInt(trust) - BigInt(push)).toString();
 
     document.getElementById("totalSupply").innerText =
     total.toString();
