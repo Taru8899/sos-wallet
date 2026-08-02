@@ -1,4 +1,6 @@
-let walletAddress = null;
+let provider;
+let signer;
+let walletAddress;
 
 
 const connectButton =
@@ -10,31 +12,72 @@ connectButton.onclick = async () => {
 
     if (!window.ethereum) {
 
-        alert("Install MetaMask Mobile");
+        alert("Open this inside MetaMask Mobile");
 
         return;
 
     }
 
 
-    const accounts =
-    await window.ethereum.request({
-
-        method: "eth_requestAccounts"
-
-    });
+    provider =
+    new ethers.BrowserProvider(window.ethereum);
 
 
-    walletAddress = accounts[0];
+    signer =
+    await provider.getSigner();
+
+
+    walletAddress =
+    await signer.getAddress();
 
 
     document.getElementById("address")
     .innerText = walletAddress;
 
 
+    loadSOSData();
+
 };
 
 
+
+async function loadSOSData(){
+
+
+    const contract =
+    new ethers.Contract(
+        SOS_CONTRACT,
+        SOS_ABI,
+        provider
+    );
+
+
+    const trust =
+    await contract.trustOf(walletAddress);
+
+
+    const push =
+    await contract.pushOf(walletAddress);
+
+
+    const balance =
+    await contract.balanceOf(walletAddress);
+
+
+
+    document.getElementById("trust")
+    .innerText = trust.toString();
+
+
+    document.getElementById("push")
+    .innerText = push.toString();
+
+
+    document.getElementById("balance")
+    .innerText = balance.toString();
+
+
+}
 
 document.getElementById("mintButton")
 .onclick = () => {
