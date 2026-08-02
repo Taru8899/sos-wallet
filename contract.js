@@ -4,83 +4,94 @@ const SOS_CONTRACT =
 
 const SOS_ABI = [
 
+    // balanceOf(address)
     {
-        "inputs":[
+        "inputs": [
             {
-                "internalType":"address",
-                "name":"account",
-                "type":"address"
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
             }
         ],
-        "name":"balanceOf",
-        "outputs":[
+        "name": "balanceOf",
+        "outputs": [
             {
-                "internalType":"uint256",
-                "name":"",
-                "type":"uint256"
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
             }
         ],
-        "stateMutability":"view",
-        "type":"function"
+        "stateMutability": "view",
+        "type": "function"
     },
 
+
+    // pushCountOf(address)
     {
-        "inputs":[
+        "inputs": [
             {
-                "internalType":"address",
-                "name":"user",
-                "type":"address"
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
             }
         ],
-        "name":"pushCountOf",
-        "outputs":[
+        "name": "pushCountOf",
+        "outputs": [
             {
-                "internalType":"uint256",
-                "name":"",
-                "type":"uint256"
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
             }
         ],
-        "stateMutability":"view",
-        "type":"function"
+        "stateMutability": "view",
+        "type": "function"
     },
 
+
+    // totalSupply()
     {
-        "inputs":[],
-        "name":"totalSupply",
-        "outputs":[
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [
             {
-                "internalType":"uint256",
-                "name":"",
-                "type":"uint256"
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
             }
         ],
-        "stateMutability":"view",
-        "type":"function"
+        "stateMutability": "view",
+        "type": "function"
     },
 
+
+    // pushTo(address)
     {
-        "inputs":[
+        "inputs": [
             {
-                "internalType":"address",
-                "name":"to",
-                "type":"address"
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
             }
         ],
-        "name":"pushTo",
-        "outputs":[],
-        "stateMutability":"nonpayable",
-        "type":"function"
+        "name": "pushTo",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
     },
 
+
+    // pushForMe()
     {
-        "inputs":[],
-        "name":"pushForMe",
-        "outputs":[],
-        "stateMutability":"nonpayable",
-        "type":"function"
+        "inputs": [],
+        "name": "pushForMe",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
     }
 
+
 ];
+
 
 
 let provider = null;
@@ -89,15 +100,17 @@ let contract = null;
 
 
 
-async function connectWallet(){
+async function connectWallet() {
 
-    if(!window.ethereum){
+
+    if (!window.ethereum) {
 
         throw new Error(
-        "MetaMask not detected"
+            "MetaMask not found"
         );
 
     }
+
 
 
     provider =
@@ -106,14 +119,17 @@ async function connectWallet(){
     );
 
 
+
     await provider.send(
         "eth_requestAccounts",
         []
     );
 
 
+
     signer =
     await provider.getSigner();
+
 
 
     contract =
@@ -124,10 +140,36 @@ async function connectWallet(){
     );
 
 
+
     console.log(
-        "Contract connected:",
+        "Connected contract:",
         SOS_CONTRACT
     );
+
+
+    console.log(
+        "Contract code:",
+        await provider.getCode(SOS_CONTRACT)
+    );
+
+
+
+    console.log(
+        "Chain:",
+        (await provider.getNetwork()).chainId.toString()
+    );
+
+
+
+    console.log(
+        "Direct pushCount test:",
+        (
+            await contract.pushCountOf(
+                await signer.getAddress()
+            )
+        ).toString()
+    );
+
 
 
     return await signer.getAddress();
@@ -136,74 +178,69 @@ async function connectWallet(){
 
 
 
-async function getTrust(address){
 
-    const result =
-    await contract.balanceOf(address);
+async function getTrust(address) {
 
-    console.log(
-        "Trust:",
-        result.toString()
+
+    return await contract.balanceOf(
+        address
     );
 
-    return result;
 
 }
 
 
 
-async function getPushCount(address){
-
-    const result =
-    await contract.pushCountOf(address);
+async function getPushCount(address) {
 
 
-    console.log(
-        "Push:",
-        result.toString()
+    return await contract.pushCountOf(
+        address
     );
 
-
-    return result;
 
 }
 
 
 
-async function getTotalSupply(){
 
-    const result =
-    await contract.totalSupply();
+async function getTotalSupply() {
 
 
-    console.log(
-        "Supply:",
-        result.toString()
-    );
+    return await contract.totalSupply();
 
-
-    return result;
 
 }
 
 
 
-async function pushTo(receiver){
+
+async function pushTo(receiver) {
+
 
     const tx =
-    await contract.pushTo(receiver);
+    await contract.pushTo(
+        receiver
+    );
+
 
     return await tx.wait();
 
+
 }
 
 
 
-async function pushForMe(){
+
+
+async function pushForMe() {
+
 
     const tx =
     await contract.pushForMe();
 
+
     return await tx.wait();
+
 
 }
