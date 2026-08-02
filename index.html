@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>SOS Wallet</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>SOS Wallet</h1>
+
+<p class="subtitle">
+SOS69069 Protocol Wallet
+</p>
+
+<button id="connectButton">
+Connect Wallet
+</button>
+
+<div class="card">
+
+<h2>Wallet</h2>
+
+<p id="address">
+Not Connected
+</p>
+
+</div>
+
+<div class="card">
+
+<h2>Trust Received</h2>
+
+<p id="trust">
+0
+</p>
+
+</div>
+
+<div class="card">
+
+<h2>Push Sent</h2>
+
+<p id="push">
+0
+</p>
+
+</div>
+
+<div class="card">
+
+<h2>Effective Balance</h2>
+
+<p id="effective">
+0
+</p>
+
+</div>
+
+<div class="card">
+
+<h2>Total Supply</h2>
+
+<p id="totalSupply">
+0
+</p>
+
+</div>
+
+<div class="card">
+
+<h2>Receiver Address</h2>
+
+<input
+id="receiver"
+type="text"
+placeholder="0x..."
+autocomplete="off">
+
+<button id="mintButton">
+Mint SOS
+</button>
+
+<button id="selfMintButton">
+Push For Me
+</button>
+
+</div>
+
+<div class="card">
+
+<h2>Status</h2>
+
+<p id="status">
+Ready
+</p>
+
+</div>
+
+<div class="card">
+
+<h2>Recent Activity</h2>
+
+<div id="history">
+
+No events loaded.
+
+</div>
+
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
+
+<script src="contract.js"></script>
+
+<script src="app.js"></script>
+
+</body>
+
+</html>
