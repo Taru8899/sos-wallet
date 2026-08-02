@@ -2,111 +2,103 @@ const SOS_CONTRACT =
 "0x61af906f53Eb927790055AC8eA99916a01873c15";
 
 
+const ETH_CHAIN_ID = 1n;
+
+
 const SOS_ABI = [
 
-    // balanceOf(address)
     {
-        "inputs": [
+        "inputs":[
             {
-                "internalType": "address",
-                "name": "account",
-                "type": "address"
+                "internalType":"address",
+                "name":"account",
+                "type":"address"
             }
         ],
-        "name": "balanceOf",
-        "outputs": [
+        "name":"balanceOf",
+        "outputs":[
             {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
+                "internalType":"uint256",
+                "name":"",
+                "type":"uint256"
             }
         ],
-        "stateMutability": "view",
-        "type": "function"
+        "stateMutability":"view",
+        "type":"function"
     },
 
-
-    // pushCountOf(address)
     {
-        "inputs": [
+        "inputs":[
             {
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
+                "internalType":"address",
+                "name":"user",
+                "type":"address"
             }
         ],
-        "name": "pushCountOf",
-        "outputs": [
+        "name":"pushCountOf",
+        "outputs":[
             {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
+                "internalType":"uint256",
+                "name":"",
+                "type":"uint256"
             }
         ],
-        "stateMutability": "view",
-        "type": "function"
+        "stateMutability":"view",
+        "type":"function"
     },
 
-
-    // totalSupply()
     {
-        "inputs": [],
-        "name": "totalSupply",
-        "outputs": [
+        "inputs":[],
+        "name":"totalSupply",
+        "outputs":[
             {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
+                "internalType":"uint256",
+                "name":"",
+                "type":"uint256"
             }
         ],
-        "stateMutability": "view",
-        "type": "function"
+        "stateMutability":"view",
+        "type":"function"
     },
 
-
-    // pushTo(address)
     {
-        "inputs": [
+        "inputs":[
             {
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
+                "internalType":"address",
+                "name":"to",
+                "type":"address"
             }
         ],
-        "name": "pushTo",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
+        "name":"pushTo",
+        "outputs":[],
+        "stateMutability":"nonpayable",
+        "type":"function"
     },
 
-
-    // pushForMe()
     {
-        "inputs": [],
-        "name": "pushForMe",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
+        "inputs":[],
+        "name":"pushForMe",
+        "outputs":[],
+        "stateMutability":"nonpayable",
+        "type":"function"
     }
-
 
 ];
 
 
-
-let provider = null;
-let signer = null;
-let contract = null;
-
+let provider;
+let signer;
+let contract;
 
 
-async function connectWallet() {
+
+async function connectWallet(){
 
 
-    if (!window.ethereum) {
+    if(!window.ethereum){
 
         throw new Error(
-            "MetaMask not found"
+            "MetaMask not installed"
         );
 
     }
@@ -127,6 +119,52 @@ async function connectWallet() {
 
 
 
+    const network =
+    await provider.getNetwork();
+
+
+
+    console.log(
+        "Network:",
+        network.chainId.toString()
+    );
+
+
+
+    if(network.chainId !== ETH_CHAIN_ID){
+
+        throw new Error(
+            "Wrong network. Please switch MetaMask to Ethereum Mainnet."
+        );
+
+    }
+
+
+
+    const code =
+    await provider.getCode(
+        SOS_CONTRACT
+    );
+
+
+
+    console.log(
+        "Contract code:",
+        code
+    );
+
+
+
+    if(code === "0x"){
+
+        throw new Error(
+            "SOS69069 contract not found on Ethereum Mainnet."
+        );
+
+    }
+
+
+
     signer =
     await provider.getSigner();
 
@@ -142,32 +180,8 @@ async function connectWallet() {
 
 
     console.log(
-        "Connected contract:",
+        "SOS contract connected:",
         SOS_CONTRACT
-    );
-
-
-    console.log(
-        "Contract code:",
-        await provider.getCode(SOS_CONTRACT)
-    );
-
-
-
-    console.log(
-        "Chain:",
-        (await provider.getNetwork()).chainId.toString()
-    );
-
-
-
-    console.log(
-        "Direct pushCount test:",
-        (
-            await contract.pushCountOf(
-                await signer.getAddress()
-            )
-        ).toString()
     );
 
 
@@ -179,43 +193,48 @@ async function connectWallet() {
 
 
 
-async function getTrust(address) {
-
+async function getTrust(address){
 
     return await contract.balanceOf(
         address
     );
 
-
 }
 
 
 
-async function getPushCount(address) {
-
+async function getPushCount(address){
 
     return await contract.pushCountOf(
         address
     );
 
-
 }
 
 
 
-
-async function getTotalSupply() {
-
+async function getTotalSupply(){
 
     return await contract.totalSupply();
 
-
 }
 
 
 
+async function pushTo(receiver){
 
-async function pushTo(receiver) {
+
+    const network =
+    await provider.getNetwork();
+
+
+    if(network.chainId !== ETH_CHAIN_ID){
+
+        throw new Error(
+            "Wrong network"
+        );
+
+    }
 
 
     const tx =
@@ -224,23 +243,46 @@ async function pushTo(receiver) {
     );
 
 
-    return await tx.wait();
+    console.log(
+        "Transaction hash:",
+        tx.hash
+    );
 
+
+    return await tx.wait();
 
 }
 
 
 
 
+async function pushForMe(){
 
-async function pushForMe() {
+
+    const network =
+    await provider.getNetwork();
+
+
+    if(network.chainId !== ETH_CHAIN_ID){
+
+        throw new Error(
+            "Wrong network"
+        );
+
+    }
 
 
     const tx =
     await contract.pushForMe();
 
 
-    return await tx.wait();
 
+    console.log(
+        "Transaction hash:",
+        tx.hash
+    );
+
+
+    return await tx.wait();
 
 }
