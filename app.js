@@ -36,6 +36,10 @@ connectButton.onclick = async function () {
 
 async function refreshWallet(){
 
+    console.log("Loading SOS data");
+
+    console.log("Contract:", contract);
+
     const trust =
     await getTrust(walletAddress);
 
