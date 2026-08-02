@@ -4,6 +4,9 @@ const connectButton = document.getElementById("connectButton");
 const mintButton = document.getElementById("mintButton");
 const selfMintButton = document.getElementById("selfMintButton");
 
+mintButton.disabled = true;
+selfMintButton.disabled = true;
+
 connectButton.onclick = async function () {
 
     try {
@@ -17,6 +20,9 @@ connectButton.onclick = async function () {
         walletAddress;
 
         await refreshWallet();
+
+        mintButton.disabled = false;
+        selfMintButton.disabled = false;
 
         document.getElementById("status").innerText =
         "Connected";
@@ -66,7 +72,7 @@ async function refreshWallet(){
     push.toString();
 
     document.getElementById("effective").innerText =
-    (trust - push).toString();
+    (BigInt(trust) - BigInt(push)).toString();
 
     document.getElementById("totalSupply").innerText =
     total.toString();
@@ -89,7 +95,7 @@ mintButton.onclick = async function(){
         }
 
         document.getElementById("status").innerText =
-        "Waiting for MetaMask...";
+        "Waiting for wallet confirmation...";
 
         await pushTo(receiver);
 
@@ -116,7 +122,7 @@ selfMintButton.onclick = async function(){
     try{
 
         document.getElementById("status").innerText =
-        "Waiting for MetaMask...";
+        "Waiting for wallet confirmation...";
 
         await pushForMe();
 
