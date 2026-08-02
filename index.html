@@ -1,132 +1,538 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
 
 <meta charset="UTF-8">
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>SOS Wallet</title>
+<title>SOS69069 Wallet</title>
 
-<link rel="stylesheet" href="style.css">
+
+<style>
+
+body {
+
+    font-family: Arial, sans-serif;
+    padding:20px;
+    background:#111;
+    color:white;
+
+}
+
+
+button {
+
+    width:100%;
+    padding:15px;
+    margin-top:10px;
+    font-size:18px;
+
+}
+
+
+input {
+
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    font-size:16px;
+
+}
+
+
+.card {
+
+    background:#222;
+    padding:15px;
+    margin-top:15px;
+    border-radius:10px;
+
+}
+
+
+.value {
+
+    font-size:20px;
+    color:#00ff99;
+
+}
+
+
+</style>
 
 </head>
 
+
+
 <body>
 
-<div class="container">
 
-<h1>SOS Wallet</h1>
+<h1>SOS69069 Wallet</h1>
 
-<p class="subtitle">
-SOS69069 Protocol Wallet
-</p>
+
+<div class="card">
+
 
 <button id="connectButton">
-Connect Wallet
+
+Connect MetaMask
+
 </button>
 
-<div class="card">
 
-<h2>Wallet</h2>
+<p>Status:</p>
 
-<p id="address">
-Not Connected
-</p>
+<div id="status">
+
+Disconnected
 
 </div>
 
+
+<p>Wallet:</p>
+
+<div id="address">
+
+-
+
+</div>
+
+
+</div>
+
+
+
+
+
 <div class="card">
 
-<h2>Trust Received</h2>
 
-<p id="trust">
+<h2>SOS Balance</h2>
+
+
+<p>
+
+Trust:
+
+<span id="trust" class="value">
+
 0
+
+</span>
+
 </p>
 
-</div>
 
-<div class="card">
 
-<h2>Push Sent</h2>
+<p>
 
-<p id="push">
+Push:
+
+<span id="push" class="value">
+
 0
+
+</span>
+
 </p>
 
-</div>
 
-<div class="card">
 
-<h2>Effective Balance</h2>
+<p>
 
-<p id="effective">
+Effective:
+
+<span id="effective" class="value">
+
 0
+
+</span>
+
 </p>
 
-</div>
 
-<div class="card">
 
-<h2>Total Supply</h2>
+<p>
 
-<p id="totalSupply">
+Total Supply:
+
+<span id="totalSupply" class="value">
+
 0
+
+</span>
+
 </p>
+
 
 </div>
 
+
+
+
+
+
 <div class="card">
 
-<h2>Receiver Address</h2>
+
+<h2>Mint SOS</h2>
+
+
 
 <input
+
 id="receiver"
-type="text"
-placeholder="0x..."
-autocomplete="off">
+
+placeholder="Receiver address 0x..."
+
+>
+
 
 <button id="mintButton">
-Mint SOS
+
+Push SOS To Address
+
 </button>
+
+
 
 <button id="selfMintButton">
-Push For Me
+
+Push SOS To Myself
+
 </button>
 
-</div>
 
-<div class="card">
-
-<h2>Status</h2>
-
-<p id="status">
-Ready
-</p>
 
 </div>
 
-<div class="card">
 
-<h2>Recent Activity</h2>
 
-<div id="history">
 
-No events loaded.
 
-</div>
+<!-- ethers.js -->
 
-</div>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.min.js"></script>
 
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
 
-<script src="contract.js"></script>
+<!-- SOS contract connection -->
 
-<script src="app.js"></script>
+<script src="contract.js?v=3"></script>
+
+
+
+
+
+<script>
+
+
+let walletAddress = "";
+
+
+
+const connectButton =
+document.getElementById(
+"connectButton"
+);
+
+
+
+const mintButton =
+document.getElementById(
+"mintButton"
+);
+
+
+
+const selfMintButton =
+document.getElementById(
+"selfMintButton"
+);
+
+
+
+
+
+connectButton.onclick = async function(){
+
+
+try{
+
+
+document.getElementById(
+"status"
+).innerText =
+"Connecting...";
+
+
+
+walletAddress =
+await connectWallet();
+
+
+
+document.getElementById(
+"address"
+).innerText =
+walletAddress;
+
+
+
+await refreshWallet();
+
+
+
+document.getElementById(
+"status"
+).innerText =
+"Connected to Ethereum Mainnet";
+
+
+
+}
+
+catch(error){
+
+
+console.error(error);
+
+
+document.getElementById(
+"status"
+).innerText =
+error.message;
+
+
+}
+
+
+
+};
+
+
+
+
+
+
+
+async function refreshWallet(){
+
+
+
+console.log(
+"Refreshing wallet"
+);
+
+
+
+const trust =
+await getTrust(
+walletAddress
+);
+
+
+
+const push =
+await getPushCount(
+walletAddress
+);
+
+
+
+const total =
+await getTotalSupply();
+
+
+
+
+
+document.getElementById(
+"trust"
+).innerText =
+trust.toString();
+
+
+
+
+document.getElementById(
+"push"
+).innerText =
+push.toString();
+
+
+
+
+document.getElementById(
+"effective"
+).innerText =
+(
+BigInt(trust)
+-
+BigInt(push)
+
+).toString();
+
+
+
+
+document.getElementById(
+"totalSupply"
+).innerText =
+total.toString();
+
+
+
+}
+
+
+
+
+
+
+
+mintButton.onclick = async function(){
+
+
+
+try{
+
+
+const receiver =
+document.getElementById(
+"receiver"
+).value.trim();
+
+
+
+if(receiver === ""){
+
+
+alert(
+"Enter receiver address"
+);
+
+
+return;
+
+
+}
+
+
+
+
+document.getElementById(
+"status"
+).innerText =
+"Waiting for MetaMask";
+
+
+
+
+await pushTo(
+receiver
+);
+
+
+
+
+document.getElementById(
+"status"
+).innerText =
+"Mint confirmed";
+
+
+
+await refreshWallet();
+
+
+
+}
+
+catch(error){
+
+
+console.error(error);
+
+
+document.getElementById(
+"status"
+).innerText =
+error.shortMessage ||
+error.message;
+
+
+}
+
+
+
+};
+
+
+
+
+
+
+
+
+
+selfMintButton.onclick = async function(){
+
+
+
+try{
+
+
+document.getElementById(
+"status"
+).innerText =
+"Waiting for MetaMask";
+
+
+
+await pushForMe();
+
+
+
+document.getElementById(
+"status"
+).innerText =
+"Self push confirmed";
+
+
+
+await refreshWallet();
+
+
+
+}
+
+catch(error){
+
+
+console.error(error);
+
+
+document.getElementById(
+"status"
+).innerText =
+error.shortMessage ||
+error.message;
+
+
+
+}
+
+
+
+};
+
+
+
+</script>
+
 
 </body>
 
