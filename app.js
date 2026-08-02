@@ -136,13 +136,15 @@ document.getElementById("mintButton")
         loadSOSData();
 
 
-    } catch(error){
+    catch(error){
 
-        alert(
-        error.message
-        );
+    console.log(error);
 
-    }
+    alert(
+        "ERROR:\n" + error.message
+    );
+
+}
 
 
 };
