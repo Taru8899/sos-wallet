@@ -1,150 +1,125 @@
-let provider;
-let signer;
-let walletAddress;
+let walletAddress = "";
 
+const connectButton = document.getElementById("connectButton");
+const mintButton = document.getElementById("mintButton");
+const selfMintButton = document.getElementById("selfMintButton");
 
-const connectButton =
-document.getElementById("connectButton");
-
-
-connectButton.onclick = async () => {
-
-
-    if (!window.ethereum) {
-
-        alert("Open this inside MetaMask Mobile");
-
-        return;
-
-    }
-
-
-    provider =
-    new ethers.BrowserProvider(window.ethereum);
-
-
-    signer =
-    await provider.getSigner();
-
-
-    walletAddress =
-    await signer.getAddress();
-
-
-    document.getElementById("address")
-    .innerText = walletAddress;
-
-
-    loadSOSData();
-
-};
-
-
-
-async function loadSOSData(){
-
-
-    const contract =
-    new ethers.Contract(
-        SOS_CONTRACT,
-        SOS_ABI,
-        provider
-    );
-
-
-    const trust =
-    await contract.trustOf(walletAddress);
-
-
-    const push =
-    await contract.pushOf(walletAddress);
-
-
-    const balance =
-    await contract.balanceOf(walletAddress);
-
-
-
-    document.getElementById("trust")
-    .innerText = trust.toString();
-
-
-    document.getElementById("push")
-    .innerText = push.toString();
-
-
-    document.getElementById("balance")
-    .innerText = balance.toString();
-
-
-}
-
-document.getElementById("mintButton")
-.onclick = () => {
-
-    alert(
-    "SOS Mint function will be connected next"
-    );
-
-};
-document.getElementById("mintButton")
-.onclick = async () => {
-
-
-    const receiver =
-    document.getElementById("receiver").value;
-
-
-    if(!receiver){
-
-        alert("Enter receiver address");
-
-        return;
-
-    }
-
-
-    const contract =
-    new ethers.Contract(
-        SOS_CONTRACT,
-        SOS_ABI,
-        signer
-    );
-
+connectButton.onclick = async function () {
 
     try {
 
+        document.getElementById("status").innerText =
+        "Connecting...";
 
-        const tx =
-        await contract.pushTo(receiver);
+        walletAddress = await connectWallet();
 
+        document.getElementById("address").innerText =
+        walletAddress;
 
-        alert(
-        "Transaction sent: "
-        + tx.hash
-        );
+        await refreshWallet();
 
+        document.getElementById("status").innerText =
+        "Connected";
 
-        await tx.wait();
+    }
 
+    catch(err){
 
-        alert(
-        "SOS Mint completed"
-        );
+        console.error(err);
 
+        document.getElementById("status").innerText =
+        err.message;
 
-        loadSOSData();
+    }
 
+};
 
-    catch(error){
+async function refreshWallet(){
 
-    console.log(error);
+    const trust =
+    await getTrust(walletAddress);
 
-    alert(
-        "ERROR:\n" + error.message
-    );
+    const push =
+    await getPushCount(walletAddress);
+
+    const total =
+    await getTotalSupply();
+
+    document.getElementById("trust").innerText =
+    trust.toString();
+
+    document.getElementById("push").innerText =
+    push.toString();
+
+    document.getElementById("effective").innerText =
+    (trust - push).toString();
+
+    document.getElementById("totalSupply").innerText =
+    total.toString();
 
 }
 
+mintButton.onclick = async function(){
+
+    try{
+
+        const receiver =
+        document.getElementById("receiver").value.trim();
+
+        if(receiver==""){
+
+            alert("Enter receiver address");
+
+            return;
+
+        }
+
+        document.getElementById("status").innerText =
+        "Waiting for MetaMask...";
+
+        await pushTo(receiver);
+
+        document.getElementById("status").innerText =
+        "Mint Successful";
+
+        await refreshWallet();
+
+    }
+
+    catch(err){
+
+        console.error(err);
+
+        document.getElementById("status").innerText =
+        err.shortMessage || err.message;
+
+    }
+
+};
+
+selfMintButton.onclick = async function(){
+
+    try{
+
+        document.getElementById("status").innerText =
+        "Waiting for MetaMask...";
+
+        await pushForMe();
+
+        document.getElementById("status").innerText =
+        "Self Push Successful";
+
+        await refreshWallet();
+
+    }
+
+    catch(err){
+
+        console.error(err);
+
+        document.getElementById("status").innerText =
+        err.shortMessage || err.message;
+
+    }
 
 };
