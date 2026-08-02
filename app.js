@@ -87,3 +87,62 @@ document.getElementById("mintButton")
     );
 
 };
+document.getElementById("mintButton")
+.onclick = async () => {
+
+
+    const receiver =
+    document.getElementById("receiver").value;
+
+
+    if(!receiver){
+
+        alert("Enter receiver address");
+
+        return;
+
+    }
+
+
+    const contract =
+    new ethers.Contract(
+        SOS_CONTRACT,
+        SOS_ABI,
+        signer
+    );
+
+
+    try {
+
+
+        const tx =
+        await contract.pushTo(receiver);
+
+
+        alert(
+        "Transaction sent: "
+        + tx.hash
+        );
+
+
+        await tx.wait();
+
+
+        alert(
+        "SOS Mint completed"
+        );
+
+
+        loadSOSData();
+
+
+    } catch(error){
+
+        alert(
+        error.message
+        );
+
+    }
+
+
+};
