@@ -9,58 +9,7 @@
 
 <title>SOS69069 Wallet</title>
 
-
-<style>
-
-body {
-
-    font-family: Arial, sans-serif;
-    padding:20px;
-    background:#111;
-    color:white;
-
-}
-
-
-button {
-
-    width:100%;
-    padding:15px;
-    margin-top:10px;
-    font-size:18px;
-
-}
-
-
-input {
-
-    width:100%;
-    padding:12px;
-    margin-top:10px;
-    font-size:16px;
-
-}
-
-
-.card {
-
-    background:#222;
-    padding:15px;
-    margin-top:15px;
-    border-radius:10px;
-
-}
-
-
-.value {
-
-    font-size:20px;
-    color:#00ff99;
-
-}
-
-
-</style>
+<link rel="stylesheet" href="style.css">
 
 </head>
 
@@ -69,7 +18,12 @@ input {
 <body>
 
 
+<div class="container">
+
+
 <h1>SOS69069 Wallet</h1>
+
+<p class="subtitle">Ethereum Mainnet</p>
 
 
 <div class="card">
@@ -77,7 +31,7 @@ input {
 
 <button id="connectButton">
 
-Connect MetaMask
+Connect Wallet
 
 </button>
 
@@ -105,7 +59,6 @@ Disconnected
 
 
 
-
 <div class="card">
 
 
@@ -115,61 +68,36 @@ Disconnected
 <p>
 
 Trust:
-
-<span id="trust" class="value">
-
-0
-
-</span>
+<span id="trust">0</span>
 
 </p>
-
 
 
 <p>
 
 Push:
-
-<span id="push" class="value">
-
-0
-
-</span>
+<span id="push">0</span>
 
 </p>
-
 
 
 <p>
 
 Effective:
-
-<span id="effective" class="value">
-
-0
-
-</span>
+<span id="effective">0</span>
 
 </p>
-
 
 
 <p>
 
 Total Supply:
-
-<span id="totalSupply" class="value">
-
-0
-
-</span>
+<span id="totalSupply">0</span>
 
 </p>
 
 
 </div>
-
-
 
 
 
@@ -180,358 +108,47 @@ Total Supply:
 <h2>Mint SOS</h2>
 
 
-
 <input
-
 id="receiver"
-
 placeholder="Receiver address 0x..."
-
 >
 
 
 <button id="mintButton">
-
 Push SOS To Address
-
 </button>
-
 
 
 <button id="selfMintButton">
-
 Push SOS To Myself
-
 </button>
 
+
+</div>
 
 
 </div>
 
 
 
+<!-- ethers.js v6 is an ES module — must be loaded with type="module"
+     and imported, then exposed as window.ethers so contract.js/app.js
+     (plain, non-module scripts) can use the global `ethers` object. -->
+<script type="module">
 
+    import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.min.js";
 
-<!-- ethers.js -->
+    window.ethers = ethers;
 
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.min.js"></script>
-
+</script>
 
 
 <!-- SOS contract connection -->
+<script src="contract.js?v=4"></script>
 
-<script src="contract.js?v=3"></script>
 
-
-
-
-
-<script>
-
-
-let walletAddress = "";
-
-
-
-const connectButton =
-document.getElementById(
-"connectButton"
-);
-
-
-
-const mintButton =
-document.getElementById(
-"mintButton"
-);
-
-
-
-const selfMintButton =
-document.getElementById(
-"selfMintButton"
-);
-
-
-
-
-
-connectButton.onclick = async function(){
-
-
-try{
-
-
-document.getElementById(
-"status"
-).innerText =
-"Connecting...";
-
-
-
-walletAddress =
-await connectWallet();
-
-
-
-document.getElementById(
-"address"
-).innerText =
-walletAddress;
-
-
-
-await refreshWallet();
-
-
-
-document.getElementById(
-"status"
-).innerText =
-"Connected to Ethereum Mainnet";
-
-
-
-}
-
-catch(error){
-
-
-console.error(error);
-
-
-document.getElementById(
-"status"
-).innerText =
-error.message;
-
-
-}
-
-
-
-};
-
-
-
-
-
-
-
-async function refreshWallet(){
-
-
-
-console.log(
-"Refreshing wallet"
-);
-
-
-
-const trust =
-await getTrust(
-walletAddress
-);
-
-
-
-const push =
-await getPushCount(
-walletAddress
-);
-
-
-
-const total =
-await getTotalSupply();
-
-
-
-
-
-document.getElementById(
-"trust"
-).innerText =
-trust.toString();
-
-
-
-
-document.getElementById(
-"push"
-).innerText =
-push.toString();
-
-
-
-
-document.getElementById(
-"effective"
-).innerText =
-(
-BigInt(trust)
--
-BigInt(push)
-
-).toString();
-
-
-
-
-document.getElementById(
-"totalSupply"
-).innerText =
-total.toString();
-
-
-
-}
-
-
-
-
-
-
-
-mintButton.onclick = async function(){
-
-
-
-try{
-
-
-const receiver =
-document.getElementById(
-"receiver"
-).value.trim();
-
-
-
-if(receiver === ""){
-
-
-alert(
-"Enter receiver address"
-);
-
-
-return;
-
-
-}
-
-
-
-
-document.getElementById(
-"status"
-).innerText =
-"Waiting for MetaMask";
-
-
-
-
-await pushTo(
-receiver
-);
-
-
-
-
-document.getElementById(
-"status"
-).innerText =
-"Mint confirmed";
-
-
-
-await refreshWallet();
-
-
-
-}
-
-catch(error){
-
-
-console.error(error);
-
-
-document.getElementById(
-"status"
-).innerText =
-error.shortMessage ||
-error.message;
-
-
-}
-
-
-
-};
-
-
-
-
-
-
-
-
-
-selfMintButton.onclick = async function(){
-
-
-
-try{
-
-
-document.getElementById(
-"status"
-).innerText =
-"Waiting for MetaMask";
-
-
-
-await pushForMe();
-
-
-
-document.getElementById(
-"status"
-).innerText =
-"Self push confirmed";
-
-
-
-await refreshWallet();
-
-
-
-}
-
-catch(error){
-
-
-console.error(error);
-
-
-document.getElementById(
-"status"
-).innerText =
-error.shortMessage ||
-error.message;
-
-
-
-}
-
-
-
-};
-
-
-
-</script>
+<!-- UI wiring -->
+<script src="app.js?v=4"></script>
 
 
 </body>
