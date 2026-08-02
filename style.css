@@ -1,50 +1,216 @@
-body {
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
 
-    font-family: Arial, sans-serif;
+body{
 
-    background: #111;
+    font-family:Arial, Helvetica, sans-serif;
 
-    color: white;
+    background:#111827;
 
-    text-align: center;
+    color:#ffffff;
+
+    padding:20px;
 
 }
 
+.container{
 
-.container {
+    max-width:500px;
 
-    max-width: 400px;
-
-    margin: auto;
-
-    padding: 20px;
+    margin:auto;
 
 }
 
+h1{
 
-.card {
+    text-align:center;
 
-    background: #222;
-
-    padding: 15px;
-
-    margin: 10px;
-
-    border-radius: 10px;
+    margin-bottom:5px;
 
 }
 
+.subtitle{
 
-button {
+    text-align:center;
 
-    padding: 15px;
+    color:#bbbbbb;
 
-    margin: 10px;
+    margin-bottom:25px;
 
-    width: 80%;
+}
 
-    border-radius: 10px;
+.card{
 
-    font-size: 18px;
+    background:#1f2937;
+
+    border-radius:15px;
+
+    padding:18px;
+
+    margin-bottom:15px;
+
+    box-shadow:0 2px 8px rgba(0,0,0,.35);
+
+}
+
+.card h2{
+
+    font-size:18px;
+
+    margin-bottom:10px;
+
+    color:#4ade80;
+
+}
+
+.card p{
+
+    word-break:break-all;
+
+    font-size:16px;
+
+}
+
+input{
+
+    width:100%;
+
+    padding:14px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:#374151;
+
+    color:white;
+
+    font-size:16px;
+
+    margin-top:10px;
+
+    margin-bottom:15px;
+
+}
+
+input::placeholder{
+
+    color:#9ca3af;
+
+}
+
+button{
+
+    width:100%;
+
+    padding:15px;
+
+    border:none;
+
+    border-radius:10px;
+
+    font-size:17px;
+
+    font-weight:bold;
+
+    cursor:pointer;
+
+    margin-top:10px;
+
+    background:#2563eb;
+
+    color:white;
+
+}
+
+button:hover{
+
+    opacity:.9;
+
+}
+
+button:active{
+
+    transform:scale(.98);
+
+}
+
+#mintButton{
+
+    background:#16a34a;
+
+}
+
+#selfMintButton{
+
+    background:#ea580c;
+
+}
+
+#status{
+
+    color:#facc15;
+
+    font-weight:bold;
+
+}
+
+#history{
+
+    max-height:300px;
+
+    overflow:auto;
+
+    font-size:14px;
+
+}
+
+.event{
+
+    border-bottom:1px solid #374151;
+
+    padding:10px 0;
+
+}
+
+.success{
+
+    color:#22c55e;
+
+}
+
+.error{
+
+    color:#ef4444;
+
+}
+
+.loading{
+
+    color:#60a5fa;
+}
+
+@media (max-width:480px){
+
+    body{
+
+        padding:12px;
+
+    }
+
+    h1{
+
+        font-size:28px;
+
+    }
+
+    .card{
+
+        padding:15px;
+
+    }
 
 }
