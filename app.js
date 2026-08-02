@@ -41,14 +41,17 @@ async function refreshWallet(){
     console.log("Contract:", contract);
 
     console.log(
-"Current wallet:",
-walletAddress
-);
+        "Current wallet:",
+        walletAddress
+    );
 
-console.log(
-"Trust raw:",
-trust.toString()
-);
+    const trust =
+    await getTrust(walletAddress);
+
+    console.log(
+        "Trust raw:",
+        trust.toString()
+    );
 
     const push =
     await getPushCount(walletAddress);
