@@ -99,7 +99,7 @@
   <div class="card">
     <h2>Push history</h2>
     <p style="color:#9ca3af;font-size:14px;margin-bottom:10px">
-      Recent SOS Transfer events (received / sent). Scanned in small chunks to avoid RPC limits.
+      Last 100 SOS Transfer events (received / sent). Scanned in small chunks to avoid RPC limits.
     </p>
     <div id="history">No data yet. Enter an address above.</div>
   </div>
@@ -123,6 +123,7 @@
 // ===============================
 
 const SOS_CONTRACT = "0x61af906f53Eb927790055AC8eA99916a01873c15";
+const MAX_TX_SHOW = 100;
 
 // try these in order if one fails
 const RPC_LIST = [
@@ -254,7 +255,7 @@ async function loadHistory(address) {
     await withProvider(async (c, provider) => {
       const currentBlock = await provider.getBlockNumber();
 
-      // start small: last \~30k blocks (\~4 days), chunk by 5k
+      // last \~30k blocks (\~4 days), chunk by 5k
       let lookback = 30000;
       let chunkSize = 5000;
       let fromBlock = Math.max(0, currentBlock - lookback);
@@ -301,9 +302,9 @@ async function loadHistory(address) {
       }
 
       let html = "";
-      const maxShow = 50;
+      const shown = unique.slice(0, MAX_TX_SHOW);
 
-      for (const log of unique.slice(0, maxShow)) {
+      for (const log of shown) {
         const from = log.args.from;
         const to   = log.args.to;
         const val  = log.args.value.toString();
@@ -325,10 +326,14 @@ async function loadHistory(address) {
           "</div>";
       }
 
-      if (unique.length > maxShow) {
+      if (unique.length > MAX_TX_SHOW) {
         html +=
-          '<div class="event meta">Showing latest ' + maxShow +
-          " of " + unique.length + " events in range.</div>";
+          '<div class="event meta">Showing last ' + MAX_TX_SHOW +
+          " of " + unique.length + " events found in range.</div>";
+      } else {
+        html +=
+          '<div class="event meta">Showing ' + unique.length +
+          " event" + (unique.length === 1 ? "" : "s") + ".</div>";
       }
 
       historyDiv.innerHTML = html;
