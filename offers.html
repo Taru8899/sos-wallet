@@ -140,6 +140,38 @@
     background: #374151;
   }
   .small-btn.danger { background: #b91c1c; }
+
+  .status-badge {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-weight: bold;
+  }
+  .status-open { background: #374151; color: #e5e7eb; }
+  .status-accepted { background: #1d4ed8; color: white; }
+  .status-closed { background: #15803d; color: white; }
+  .signed-msg {
+    margin-top: 8px;
+    padding: 10px;
+    background: #0f172a;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #9ca3af;
+    white-space: pre-wrap;
+    word-break: break-all;
+    display: none;
+  }
+  .signed-msg.show { display: block; }
+  .accept-list {
+    font-size: 13px;
+    color: #d1d5db;
+    margin-top: 6px;
+  }
+  .rep-line {
+    font-size: 13px;
+    color: #a3e635;
+    margin-top: 4px;
+  }
   code {
     background: #374151;
     padding: 2px 6px;
@@ -183,10 +215,12 @@
 <div class="card warning-card">
   <h2>⚠ Safety Rules</h2>
   <ul class="rules">
-    <li>This is pure P2P. There is <strong>no escrow</strong>.</li>
-    <li>Posting an offer mints <strong>1 SOS</strong> to your wallet (on-chain proof you paid gas to list).</li>
-    <li>Always verify the poster’s SOS balance on Etherscan before sending anything.</li>
-    <li>Never send first to a stranger. Prefer public channels (Telegram / X) with reputation.</li>
+    <li>This is pure P2P. There is <strong>no real escrow</strong> — SOS mints are cheap on-chain evidence only.</li>
+    <li><strong>Post</strong> → you mint 1 SOS (listing proof). Optional signature is stored in offers.json.</li>
+    <li><strong>Negotiate</strong> first on Telegram / X / Discord / WhatsApp using the contact on the offer.</li>
+    <li><strong>Accept</strong> → other party calls <code>pushForMe</code> (1 SOS mint) to lock their commitment on-chain.</li>
+    <li><strong>Pay</strong> off-chain, then poster <strong>Closes</strong> with another <code>pushForMe</code> and marks the offer filled.</li>
+    <li>Always verify balances and mint txs on Etherscan. Never send first to a stranger without reputation.</li>
     <li>Goods &amp; services deals are highest risk — use common sense.</li>
   </ul>
 </div>
@@ -204,7 +238,8 @@
   </p>
   <p class="info-text">
     A signature does <em>not</em> lock tokens, create escrow, or force anyone to trade.
-    It only proves authorship of the text.
+    It only proves authorship of the text. The full signed message is saved in
+    <code>offers.json</code> as <code>signedMessage</code> — open the offer card or the JSON to read it.
   </p>
 </div>
 
