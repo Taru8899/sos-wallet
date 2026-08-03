@@ -12,6 +12,7 @@ const postOfferBtn = document.getElementById("postOfferBtn");
 const signOfferBtn = document.getElementById("signOfferBtn");
 const downloadJsonBtn = document.getElementById("downloadJsonBtn");
 const reloadJsonBtn = document.getElementById("reloadJsonBtn");
+const copyJsonBtn = document.getElementById("copyJsonBtn");
 
 postOfferBtn.disabled = true;
 signOfferBtn.disabled = true;
@@ -53,11 +54,24 @@ document.getElementById("methodChips").addEventListener("click", (e) => {
 
 // ---------- STORAGE ----------
 function loadPending() {
-  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); }
-  catch { return []; }
+  try {
+    const raw = localStorage.getItem(LOCAL_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.warn("loadPending failed", e);
+    return [];
+  }
 }
+
 function savePending(list) {
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
+  try {
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.error("savePending failed", e);
+    alert("Could not save offers in this browser (localStorage full or blocked).");
+  }
 }
 
 function loadRep() {
@@ -86,35 +100,76 @@ function getRepLine(address) {
 }
 
 async function fetchCommunityOffers() {
+  const res = await fetch(OFFERS_JSON_URL + "?t=" + Date.now(), { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status + " loading offers.json");
+  const textBody = await res.text();
+  let data;
   try {
-    const res = await fetch(OFFERS_JSON_URL + "?t=" + Date.now());
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
-    communityOffers = Array.isArray(data) ? data : [];
-  } catch (e) {
-    console.warn("Could not load offers.json:", e);
-    communityOffers = [];
+    data = JSON.parse(textBody);
+  } catch {
+    throw new Error("offers.json is not valid JSON");
   }
+  communityOffers = Array.isArray(data) ? data : [];
 }
 
 function allOffers() {
-  const ids = new Set(communityOffers.map(o => o.id));
-  const extra = pendingOffers.filter(o => !ids.has(o.id));
-  return [...extra, ...communityOffers];
+  pendingOffers = loadPending();
+  const byId = new Map();
+  for (const o of communityOffers) {
+    if (o && o.id) byId.set(o.id, o);
+  }
+  for (const o of pendingOffers) {
+    if (o && o.id) byId.set(o.id, o);
+  }
+  return Array.from(byId.values()).sort((a, b) => {
+    const ta = Date.parse(a.createdAt || 0) || 0;
+    const tb = Date.parse(b.createdAt || 0) || 0;
+    return tb - ta;
+  });
+}
+
+function getExportJson() {
+  const merged = allOffers();
+  return {
+    merged,
+    json: JSON.stringify(merged, null, 2)
+  };
+}
+
+function updateExportUI() {
+  const { merged, json } = getExportJson();
+  const meta = document.getElementById("exportMeta");
+  const ta = document.getElementById("jsonPreview");
+  if (meta) {
+    meta.innerText = merged.length
+      ? merged.length + " offer(s) ready to export (" + json.length + " chars)"
+      : "0 offers ready to export — post an offer first";
+  }
+  if (ta && !ta.dataset.touched) {
+    ta.value = merged.length ? json : "";
+  }
+  if (downloadJsonBtn) {
+    downloadJsonBtn.classList.toggle("has-data", merged.length > 0);
+    downloadJsonBtn.textContent = merged.length
+      ? "Download offers.json (" + merged.length + ")"
+      : "Download current offers.json";
+  }
+  if (copyJsonBtn) {
+    copyJsonBtn.classList.toggle("has-data", merged.length > 0);
+  }
 }
 
 function persistOfferUpdate(offer) {
   pendingOffers = loadPending();
   const pi = pendingOffers.findIndex(o => o.id === offer.id);
-  if (pi !== -1) {
-    pendingOffers[pi] = offer;
-  } else {
-    pendingOffers.unshift(offer);
-  }
+  if (pi !== -1) pendingOffers[pi] = offer;
+  else pendingOffers.unshift(offer);
   savePending(pendingOffers);
 
   const ci = communityOffers.findIndex(o => o.id === offer.id);
   if (ci !== -1) communityOffers[ci] = offer;
+
+  updateExportUI();
 }
 
 function findOffer(id) {
@@ -244,9 +299,15 @@ async function finishPost(offer, doSign) {
 
   clearForm();
   await refreshWallet();
+  updateExportUI();
+  const ta = document.getElementById("jsonPreview");
+  if (ta) {
+    ta.value = getExportJson().json;
+    ta.dataset.touched = "";
+  }
   renderOffers();
   document.getElementById("status").innerText =
-    "Offer posted + 1 SOS minted. Download offers.json and commit so others see it.";
+    "Offer saved in this browser + 1 SOS minted. Download/Copy JSON (blue button) → paste into GitHub offers.json → commit.";
 }
 
 postOfferBtn.onclick = async function () {
@@ -261,7 +322,7 @@ signOfferBtn.onclick = async function () {
   await finishPost(offer, true);
 };
 
-// ---------- HANDSHAKE: ACCEPT / CLOSE ----------
+// ---------- HANDSHAKE ----------
 async function acceptOffer(id) {
   if (!walletAddress || !contract || !signer) {
     alert("Connect wallet first");
@@ -322,7 +383,7 @@ async function acceptOffer(id) {
   await refreshWallet();
   renderOffers();
   document.getElementById("status").innerText =
-    "Deal accepted (1 SOS minted). SOS-deliverer should mint first (pushTo), then payment. Poster closes when done. Download offers.json to publish.";
+    "Accepted. Export JSON (blue button) and commit so others see the accept.";
 }
 
 async function closeOffer(id) {
@@ -365,13 +426,9 @@ async function closeOffer(id) {
   await refreshWallet();
   renderOffers();
   document.getElementById("status").innerText =
-    "Deal closed (1 SOS minted). Download offers.json and commit to update the public list.";
+    "Closed. Export JSON (blue button) and commit to update the public list.";
 }
 
-/**
- * Flag no-pay: does NOT close the deal.
- * Requires at least one evidence tx hash (SOS mint to them and/or ETH/USDC you sent).
- */
 function markAbandon(offerId, acceptorAddress) {
   const offer = findOffer(offerId);
   if (!offer || !walletAddress) return;
@@ -399,12 +456,10 @@ function markAbandon(offerId, acceptorAddress) {
     return /^0x[a-fA-F0-9]{64}$/.test(h);
   }
   if (mintEv && !looksLikeTx(mintEv)) {
-    const ok = confirm("SOS mint value does not look like a tx hash. Save anyway?");
-    if (!ok) return;
+    if (!confirm("SOS mint value does not look like a tx hash. Save anyway?")) return;
   }
   if (payEv && !looksLikeTx(payEv)) {
-    const ok = confirm("Payment value does not look like a tx hash. Save anyway?");
-    if (!ok) return;
+    if (!confirm("Payment value does not look like a tx hash. Save anyway?")) return;
   }
 
   if (!offer.flags) offer.flags = [];
@@ -419,29 +474,103 @@ function markAbandon(offerId, acceptorAddress) {
   bumpRep(acceptorAddress, "abandons");
 
   document.getElementById("status").innerText =
-    "Flagged no-pay with evidence (deal still open). Close deal separately if you want it CLOSED. Download offers.json to publish.";
+    "Flagged no-pay with evidence (deal still open). Export JSON to publish. Close separately if needed.";
   renderOffers();
 }
 
-// ---------- JSON ----------
-downloadJsonBtn.onclick = function () {
-  const merged = allOffers();
-  const blob = new Blob([JSON.stringify(merged, null, 2)], { type: "application/json" });
+// ---------- EXPORT / IMPORT ----------
+function doDownload() {
+  const { merged, json } = getExportJson();
+  updateExportUI();
+  const ta = document.getElementById("jsonPreview");
+  if (ta) ta.value = json;
+
+  if (!merged.length) {
+    alert(
+      "Nothing to download — 0 offers in browser storage.\n\n" +
+      "If you still see cards on screen, hard-refresh (Ctrl+Shift+R) or check console:\n" +
+      "localStorage.getItem('sos69069_pending_offers_v1')"
+    );
+    document.getElementById("status").innerText = "Download skipped — 0 offers";
+    return;
+  }
+
+  const blob = new Blob([json], { type: "application/json;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = "offers.json";
+  a.style.display = "none";
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
-  document.getElementById("status").innerText = "offers.json downloaded — commit it to the repo";
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(json).catch(() => {});
+  }
+
+  document.getElementById("status").innerText =
+    "Downloaded offers.json (" + merged.length + " offers, " + json.length +
+    " chars). Upload this file to the repo root as offers.json and commit.";
+  console.log("export offers", merged.length, merged);
+}
+
+downloadJsonBtn.onclick = function () {
+  try {
+    doDownload();
+  } catch (e) {
+    console.error(e);
+    document.getElementById("status").innerText = "Download failed: " + e.message;
+    alert("Download failed: " + e.message);
+  }
 };
+
+if (copyJsonBtn) {
+  copyJsonBtn.onclick = function () {
+    const { merged, json } = getExportJson();
+    const ta = document.getElementById("jsonPreview");
+    if (ta) {
+      ta.value = json;
+      ta.dataset.touched = "1";
+      ta.focus();
+      ta.select();
+    }
+    updateExportUI();
+    if (!merged.length) {
+      alert("0 offers to copy. Post an offer first.");
+      return;
+    }
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(json).then(() => {
+        document.getElementById("status").innerText =
+          "Copied " + merged.length + " offers. Paste into GitHub offers.json → Commit.";
+      }).catch(() => {
+        document.getElementById("status").innerText =
+          "Select the textarea and copy manually (Ctrl+C).";
+      });
+    } else {
+      document.getElementById("status").innerText = "Select textarea and press Ctrl+C";
+    }
+  };
+}
 
 reloadJsonBtn.onclick = async function () {
   document.getElementById("status").innerText = "Reloading offers.json…";
-  await fetchCommunityOffers();
-  pendingOffers = loadPending();
-  renderOffers();
-  document.getElementById("status").innerText = "Reloaded";
+  try {
+    await fetchCommunityOffers();
+    pendingOffers = loadPending();
+    await renderOffers();
+    updateExportUI();
+    const total = allOffers().length;
+    const server = communityOffers.length;
+    document.getElementById("status").innerText =
+      "Reloaded: " + server + " on server, " + pendingOffers.length +
+      " pending locally, " + total + " merged. Server file stays empty until you commit a download.";
+  } catch (e) {
+    console.error(e);
+    document.getElementById("status").innerText = "Reload failed: " + e.message;
+  }
 };
 
 // ---------- RENDER ----------
@@ -474,6 +603,7 @@ function statusBadge(offer) {
 
 async function renderOffers() {
   updateMarketMids();
+  updateExportUI();
   const listEl = document.getElementById("offersList");
   let offers = allOffers().filter(o => {
     if (currentFilter === "sell" || currentFilter === "buy") return o.type === currentFilter;
@@ -483,16 +613,18 @@ async function renderOffers() {
   offers.sort((a, b) => {
     const ac = (a.filled || a.status === "closed") ? 1 : 0;
     const bc = (b.filled || b.status === "closed") ? 1 : 0;
-    return ac - bc;
+    if (ac !== bc) return ac - bc;
+    return (Date.parse(b.createdAt || 0) || 0) - (Date.parse(a.createdAt || 0) || 0);
   });
 
   if (offers.length === 0) {
-    listEl.innerHTML = '<p class="muted">No offers yet. Be the first!</p>';
+    listEl.innerHTML = '<p class="muted">No offers yet. Post one, then Download/Copy JSON to GitHub.</p>';
     return;
   }
 
   listEl.innerHTML = "";
   const me = (walletAddress || "").toLowerCase();
+  const pendingIds = new Set(loadPending().map(o => o.id));
 
   for (const o of offers) {
     const card = document.createElement("div");
@@ -502,6 +634,8 @@ async function renderOffers() {
     const isPoster = me && o.poster.toLowerCase() === me;
     const isClosed = o.filled || o.status === "closed";
     const alreadyAccepted = (o.accepts || []).some(a => a.address.toLowerCase() === me);
+    const onServer = communityOffers.some(c => c.id === o.id);
+    const isPending = pendingIds.has(o.id) && !onServer;
 
     let balanceHtml = "";
     if (o.type === "sell" && contract) {
@@ -524,13 +658,12 @@ async function renderOffers() {
     const closeLink = o.closeTx
       ? ' · <a href="https://etherscan.io/tx/' + o.closeTx + '" target="_blank" rel="noopener">close mint</a>'
       : "";
-    const isPending = pendingOffers.some(p => p.id === o.id);
     const rep = getRepLine(o.poster);
 
     let acceptsHtml = "";
     if (o.accepts && o.accepts.length) {
       acceptsHtml = '<div class="accept-list"><strong>Accepts (on-chain):</strong><br>' +
-        '<span class="muted">After accept: the side that must deliver SOS should mint first (pushTo), then payment.</span><br>' +
+        '<span class="muted">After accept: SOS-deliverer should mint first (pushTo), then payment.</span><br>' +
         o.accepts.map(a => {
           const as = a.address.slice(0, 6) + "…" + a.address.slice(-4);
           const tx = a.mintTx
@@ -544,7 +677,7 @@ async function renderOffers() {
         "</div>";
     }
     if (o.flags && o.flags.length) {
-      acceptsHtml += '<div class="accept-list" style="color:#fca5a5"><strong>No-pay flags (evidence):</strong><br>' +
+      acceptsHtml += '<div class="accept-list" style="color:#fca5a5"><strong>No-pay flags:</strong><br>' +
         o.flags.map(f => {
           const as = f.address.slice(0, 6) + "…" + f.address.slice(-4);
           const links = [];
@@ -656,7 +789,7 @@ async function verifySignature(id) {
   try {
     const recovered = ethers.verifyMessage(offer.signedMessage, offer.signature);
     if (recovered.toLowerCase() === offer.poster.toLowerCase()) {
-      alert("✅ Signature valid\nRecovered address matches the poster.\n\nOpen “Show signed message” on the card or read signedMessage in offers.json.");
+      alert("✅ Signature valid — recovered address matches poster.");
     } else {
       alert("❌ Signature does NOT match the poster address!");
     }
@@ -743,8 +876,22 @@ function updateMarketMids() {
 }
 
 (async function init() {
-  pendingOffers = loadPending();
-  await Promise.all([fetchCommunityOffers(), fetchEthUsd()]);
-  renderOffers();
-  updateMarketMids();
+  const listEl = document.getElementById("offersList");
+  try {
+    pendingOffers = loadPending();
+    try {
+      await fetchCommunityOffers();
+    } catch (e) {
+      console.warn(e);
+      communityOffers = [];
+    }
+    try { await fetchEthUsd(); } catch (e) { console.warn(e); }
+    updateExportUI();
+    await renderOffers();
+  } catch (e) {
+    console.error("init failed", e);
+    if (listEl) {
+      listEl.innerHTML = '<p class="error">Failed to load: ' + escapeHtml(String(e.message || e)) + '</p>';
+    }
+  }
 })();
