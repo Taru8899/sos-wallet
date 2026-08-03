@@ -6,7 +6,6 @@
 <title>SOS69069 · Offers</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  /* Offers-only styles — does not affect index.html or history.html */
   .nav-links { text-align: center; }
   .nav-links a {
     color: #60a5fa;
@@ -17,7 +16,6 @@
   }
   .nav-links a.wallet { color: #facc15; }
   .nav-links a.history { color: #60a5fa; }
-
   label {
     display: block;
     margin-top: 12px;
@@ -52,7 +50,6 @@
   .chips button.chip-active { background: #2563eb; }
   button.secondary { background: #4b5563; }
   button:disabled { opacity: 0.45; cursor: not-allowed; }
-
   .warning-card h2 { color: #facc15; }
   .info-card h2 { color: #60a5fa; }
   .rules {
@@ -70,7 +67,6 @@
   }
   .muted { color: #9ca3af; font-size: 14px; }
   .small { font-size: 13px; margin-bottom: 10px; }
-
   .filters { display: flex; gap: 8px; margin-bottom: 14px; }
   .filter-btn {
     width: auto;
@@ -80,7 +76,6 @@
     background: #374151;
   }
   .filter-btn.active { background: #2563eb; }
-
   .offers-list { max-height: 70vh; overflow: auto; }
   .offer-card {
     background: #111827;
@@ -140,7 +135,6 @@
     background: #374151;
   }
   .small-btn.danger { background: #b91c1c; }
-
   .status-badge {
     font-size: 11px;
     padding: 2px 7px;
@@ -203,7 +197,6 @@
   <p>Total Supply: <span id="totalSupply">0</span></p>
 </div>
 
-<!-- MARKET MID PRICES -->
 <div class="card" id="marketCard">
   <h2>Market mid (from offers)</h2>
   <p class="muted small">Parsed from sell/buy offers priced in USDC, USD, USDT or ETH. Free-text (goods/cash) ignored.</p>
@@ -215,13 +208,14 @@
 <div class="card warning-card">
   <h2>⚠ Safety Rules</h2>
   <ul class="rules">
-    <li>This is pure P2P. There is <strong>no real escrow</strong> — SOS mints are cheap on-chain evidence only.</li>
+    <li>This is pure P2P. There is <strong>no real escrow</strong> — SOS mints and tx hashes are cheap on-chain evidence only.</li>
     <li><strong>Post</strong> → you mint 1 SOS (listing proof). Optional signature is stored in offers.json.</li>
     <li><strong>Negotiate</strong> first on Telegram / X / Discord / WhatsApp using the contact on the offer.</li>
-    <li><strong>Accept</strong> → other party calls <code>pushForMe</code> (1 SOS mint) to lock their commitment on-chain.</li>
-    <li><strong>Pay</strong> off-chain, then poster <strong>Closes</strong> with another <code>pushForMe</code> and marks the offer filled.</li>
-    <li>Always verify balances and mint txs on Etherscan. Never send first to a stranger without reputation.</li>
-    <li>Goods &amp; services deals are highest risk — use common sense.</li>
+    <li><strong>Accept</strong> → other party <code>pushForMe</code> (1 SOS) to commit.</li>
+    <li><strong>First delivery act</strong> → the side that must <strong>mint / send SOS</strong> acts first on-chain (e.g. <code>pushTo</code> the other wallet). Then payment (ETH/USDC/etc).</li>
+    <li><strong>Close</strong> → poster <code>pushForMe</code> after the deal is done.</li>
+    <li><strong>Flag no-pay</strong> does not close the deal. You must paste evidence tx hash(es): SOS mint to them and/or ETH/USDC you sent. Then close separately if you want.</li>
+    <li>Always verify on Etherscan. Never send first to a stranger without reputation.</li>
   </ul>
 </div>
 
@@ -246,19 +240,15 @@
 <div class="card">
   <h2>Post New Offer</h2>
   <p class="muted small">Posting will call the SOS contract and mint 1 SOS to you (gas required).</p>
-
   <label>Type</label>
   <select id="offerType">
     <option value="sell">Sell SOS (I have mints)</option>
     <option value="buy">Buy SOS (I want mints)</option>
   </select>
-
   <label>Amount of SOS</label>
   <input id="offerAmount" type="number" min="1" step="1" placeholder="e.g. 1">
-
   <label>What you want / offer in return</label>
   <input id="offerPrice" placeholder="e.g. 0.01 ETH  or  5€ cash  or  box of Chupa Chups">
-
   <label>Payment / exchange method</label>
   <div class="chips" id="methodChips">
     <button type="button" data-method="ETH">ETH</button>
@@ -271,13 +261,10 @@
     <button type="button" data-method="Other">Other</button>
   </div>
   <input id="offerMethod" placeholder="Selected or free text…">
-
   <label>Contact (Telegram / X / Discord / email)</label>
   <input id="offerContact" placeholder="@username or email">
-
   <label>Note (optional)</label>
   <input id="offerNote" placeholder="Any extra details">
-
   <button id="postOfferBtn" disabled>Post Offer (mint 1 SOS)</button>
   <button id="signOfferBtn" class="secondary" disabled>Sign &amp; Post (mint 1 SOS)</button>
 </div>
