@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SOS69069 · Wallet History</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+  .nav-links {
+    text-align: center;
+  }
+  .nav-links a {
+    color: #60a5fa;
+    margin: 0 16px;
+    text-decoration: none;
+    font-size: 20px;
+    font-weight: 800;
+  }
+  .nav-links a.offers {
+    color: #4ade80;
+  }
+  .nav-links a.wallet {
+    color: #facc15;
+  }
+  #history {
+    max-height: 420px;
+    overflow: auto;
+    font-size: 14px;
+  }
+  .event {
+    border-bottom: 1px solid #374151;
+    padding: 12px 0;
+  }
+  .event .dir-in {
+    color: #22c55e;
+    font-weight: bold;
+  }
+  .event .dir-out {
+    color: #f97316;
+    font-weight: bold;
+  }
+  .event .meta {
+    font-size: 13px;
+    color: #9ca3af;
+    margin-top: 4px;
+  }
+  .event a {
+    font-size: 13px;
+    color: #60a5fa;
+  }
+  .loading {
+    color: #60a5fa;
+  }
+  .balance-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .balance-row span {
+    font-weight: bold;
+  }
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>SOS69069 History</h1>
+  <p class="subtitle">Look up any wallet · Trust / Push / Effective</p>
+
+  <!-- Lookup -->
+  <div class="card">
+    <h2>Lookup</h2>
+    <input id="lookupAddress" placeholder="Paste any address 0x...">
+    <button id="lookupButton">Load Wallet</button>
+    <button id="useConnectedButton" style="background:#374151">Use connected wallet</button>
+    <p>Status:</p>
+    <div id="status">Ready</div>
+  </div>
+
+  <!-- Balances -->
+  <div class="card">
+    <h2>Balances</h2>
+    <p>Address:</p>
+    <div id="viewAddress" style="word-break:break-all;margin-bottom:12px">—</div>
+
+    <p>Trust: <span id="trust">0</span></p>
+    <p>Push: <span id="push">0</span></p>
+    <p>Effective: <span id="effective">0</span></p>
+
+    <p style="margin-top:12px">
+      <a id="etherscanLink" href="#" target="_blank" rel="noopener" style="color:#60a5fa">
+        Open on Etherscan
+      </a>
+    </p>
+  </div>
+
+  <!-- History -->
+  <div class="card">
+    <h2>Push history</h2>
+    <p style="color:#9ca3af;font-size:14px;margin-bottom:10px">
+      Recent SOS Transfer events involving this address
+      (received / sent). Limited to the last \~200k blocks.
+    </p>
+    <div id="history">No data yet. Enter an address above.</div>
+  </div>
+
+  <!-- Nav -->
+  <div class="card nav-links">
+    <p style="margin-bottom:12px;color:#9ca3af;font-size:14px">More</p>
+    <a href="index.html" class="wallet">Wallet</a>
+    <a href="offers.html" class="offers">Offers</a>
+  </div>
+
+</div>
+
+<script type="module">
+  import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.min.js";
+  window.ethers = ethers;
+</script>
+
+<script>
+// ===============================
+// SOS69069 History page
+// ===============================
+
+const SOS_CONTRACT = "0x61af906f53Eb927790055AC8eA99916a01873c15";
+const PUBLIC_RPC = "https://ethereum.publicnode.com";
+
+const SOS_ABI = [
+  {
+    "inputs": [{ "internalType": "address", "name": "account", "type": "address" }],
+    "name": "balanceOf",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "user", "type": "address" }],
+    "name": "pushCountOf",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "name": "from",  "type": "address" },
+      { "indexed": true,  "name": "to",    "type": "address" },
+      { "indexed": false, "name": "value", "type": "uint256" }
+    ],
+    "name": "Transfer",
+    "type": "event"
+  }
+];
+
+let readProvider = null;
+let readContract = null;
+
+function setStatus(msg) {
+  document.getElementById("status").innerText = msg;
+}
+
+function short(addr) {
+  if (!addr) return "—";
+  return addr.slice(0, 6) + "…" + addr.slice(-4);
+}
+
+function getReadProvider() {
+  if (!readProvider) {
+    readProvider = new ethers.JsonRpcProvider(PUBLIC_RPC);
+  }
+  return readProvider;
+}
+
+function getReadContract() {
+  if (!readContract) {
+    readContract = new ethers.Contract(SOS_CONTRACT, SOS_ABI, getReadProvider());
+  }
+  return readContract;
+}
+
+async function loadBalances(address) {
+  const c = getReadContract();
+  const trust = await c.balanceOf(address);
+  const push  = await c.pushCountOf(address);
+  const effective = BigInt(trust) - BigInt(push);
+
+  document.getElementById("viewAddress").innerText = address;
+  document.getElementById("trust").innerText = trust.toString();
+  document.getElementById("push").innerText = push.toString();
+  document.getElementById("effective").innerText = effective.toString();
+
+  const link = document.getElementById("etherscanLink");
+  link.href = "https://etherscan.io/token/" + SOS_CONTRACT + "?a=" + address;
+  link.innerText = "Open on Etherscan →";
+}
+
+async function loadHistory(address) {
+  const historyDiv = document.getElementById("history");
+  historyDiv.innerHTML = '<div class="loading">Loading events…</div>';
+
+  const c = getReadContract();
+  const provider = getReadProvider();
+  const currentBlock = await provider.getBlockNumber();
+
+  // \~200k blocks ≈ last few weeks on Ethereum
+  const fromBlock = Math.max(0, currentBlock - 200000);
+
+  const filterTo   = c.filters.Transfer(null, address);
+  const filterFrom = c.filters.Transfer(address, null);
+
+  let toLogs = [];
+  let fromLogs = [];
+
+  try {
+    [toLogs, fromLogs] = await Promise.all([
+      c.queryFilter(filterTo, fromBlock, currentBlock),
+      c.queryFilter(filterFrom, fromBlock, currentBlock)
+    ]);
+  } catch (err) {
+    console.error(err);
+    // fallback: smaller range if RPC rejects the big query
+    const smallerFrom = Math.max(0, currentBlock - 50000);
+    [toLogs, fromLogs] = await Promise.all([
+      c.queryFilter(filterTo, smallerFrom, currentBlock),
+      c.queryFilter(filterFrom, smallerFrom, currentBlock)
+    ]);
+  }
+
+  const events = [...toLogs, ...fromLogs]
+    .sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
+
+  if (events.length === 0) {
+    historyDiv.innerHTML = '<div class="event">No Transfer events found in the scanned range.</div>';
+    return;
+  }
+
+  let html = "";
+  const maxShow = 50;
+
+  for (const log of events.slice(0, maxShow)) {
+    const from = log.args.from;
+    const to   = log.args.to;
+    const val  = log.args.value.toString();
+    const isIn = to.toLowerCase() === address.toLowerCase();
+    const dirClass = isIn ? "dir-in" : "dir-out";
+    const dirLabel = isIn ? "← Received" : "→ Sent";
+    const counterparty = isIn ? from : to;
+
+    html += `
+      <div class="event">
+        <div class="\( {dirClass}"> \){dirLabel} ${val} SOS</div>
+        <div class="meta">
+          ${isIn ? "from" : "to"}: ${short(counterparty)}
+          · block ${log.blockNumber}
+        </div>
+        <a href="https://etherscan.io/tx/${log.transactionHash}" target="_blank" rel="noopener">
+          tx ${log.transactionHash.slice(0, 10)}…
+        </a>
+      </div>
+    `;
+  }
+
+  if (events.length > maxShow) {
+    html += `<div class="event meta">Showing latest ${maxShow} of ${events.length} events.</div>`;
+  }
+
+  historyDiv.innerHTML = html;
+}
+
+async function lookup(rawAddress) {
+  try {
+    if (!window.ethers) {
+      throw new Error("ethers.js not loaded yet — wait a second and try again");
+    }
+
+    const address = ethers.getAddress(rawAddress.trim());
+
+    setStatus("Loading balances…");
+    await loadBalances(address);
+
+    setStatus("Loading history…");
+    await loadHistory(address);
+
+    setStatus("Done");
+
+    // keep URL shareable
+    const url = new URL(window.location.href);
+    url.searchParams.set("address", address);
+    window.history.replaceState({}, "", url);
+
+  } catch (err) {
+    console.error(err);
+    setStatus(err.shortMessage || err.message || String(err));
+  }
+}
+
+document.getElementById("lookupButton").onclick = function () {
+  const addr = document.getElementById("lookupAddress").value;
+  if (!addr || !addr.trim()) {
+    setStatus("Enter an address");
+    return;
+  }
+  lookup(addr);
+};
+
+document.getElementById("useConnectedButton").onclick = async function () {
+  try {
+    if (!window.ethereum) {
+      throw new Error("No wallet found. Install MetaMask or open in a wallet browser.");
+    }
+    setStatus("Connecting…");
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    if (!accounts || !accounts[0]) {
+      throw new Error("No account returned");
+    }
+    document.getElementById("lookupAddress").value = accounts[0];
+    await lookup(accounts[0]);
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message || String(err));
+  }
+};
+
+// support ?address=0x...
+window.addEventListener("load", function () {
+  const params = new URLSearchParams(window.location.search);
+  const a = params.get("address");
+  if (a) {
+    document.getElementById("lookupAddress").value = a;
+    // wait briefly for ethers module
+    setTimeout(function () {
+      lookup(a);
+    }, 300);
+  }
+});
+</script>
+
+</body>
+</html>
