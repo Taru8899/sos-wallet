@@ -99,7 +99,7 @@
   <div class="card">
     <h2>Push history</h2>
     <p style="color:#9ca3af;font-size:14px;margin-bottom:10px">
-      Last 100 SOS push events (Pushed / Transfer). Scans newest blocks first.
+      Last 100 SOS token transfers (same source as Etherscan Token Transfers).
     </p>
     <div id="history">No data yet. Enter an address above.</div>
   </div>
@@ -120,19 +120,24 @@
 <script>
 // ===============================
 // SOS69069 History page
+// Balances: on-chain RPC
+// History: Blockscout tokentx API (Etherscan-compatible)
 // ===============================
 
 const SOS_CONTRACT = "0x61af906f53Eb927790055AC8eA99916a01873c15";
 const MAX_TX_SHOW = 100;
-const CHUNK = 2000;          // small chunks for public RPCs
-const MAX_LOOKBACK = 150000; // stop after this many blocks if still empty
 
 const RPC_LIST = [
   "https://ethereum.publicnode.com",
   "https://rpc.ankr.com/eth",
   "https://eth.llamarpc.com",
-  "https://1rpc.io/eth",
-  "https://cloudflare-eth.com"
+  "https://1rpc.io/eth"
+];
+
+// Free explorer APIs (no key) — same data as Etherscan tokentxns
+const EXPLORER_APIS = [
+  "https://eth.blockscout.com/api",
+  "https://api.etherscan.io/v2/api?chainid=1"
 ];
 
 const SOS_ABI = [
@@ -149,26 +154,6 @@ const SOS_ABI = [
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      { "indexed": true,  "name": "from",   "type": "address" },
-      { "indexed": true,  "name": "to",     "type": "address" },
-      { "indexed": false, "name": "amount", "type": "uint256" }
-    ],
-    "name": "Pushed",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      { "indexed": true,  "name": "from",  "type": "address" },
-      { "indexed": true,  "name": "to",    "type": "address" },
-      { "indexed": false, "name": "value", "type": "uint256" }
-    ],
-    "name": "Transfer",
-    "type": "event"
   }
 ];
 
@@ -192,10 +177,8 @@ function makeProvider(url) {
 async function initRead(forceNext) {
   if (forceNext) currentRpcIndex++;
   if (currentRpcIndex >= RPC_LIST.length) currentRpcIndex = 0;
-  const url = RPC_LIST[currentRpcIndex];
-  readProvider = makeProvider(url);
+  readProvider = makeProvider(RPC_LIST[currentRpcIndex]);
   readContract = new ethers.Contract(SOS_CONTRACT, SOS_ABI, readProvider);
-  return url;
 }
 
 async function withProvider(fn) {
@@ -231,160 +214,131 @@ async function loadBalances(address) {
   });
 }
 
-// Query one chunk; return [] on failure instead of throwing
-async function safeQuery(contract, filter, fromBlock, toBlock) {
+function formatTime(ts) {
+  if (!ts) return "";
   try {
-    return await contract.queryFilter(filter, fromBlock, toBlock);
-  } catch (err) {
-    console.warn("queryFilter failed", fromBlock, toBlock, err.message || err);
-    return null; // null = hard fail (try other RPC / smaller)
+    const d = new Date(Number(ts) * 1000);
+    return d.toLocaleString();
+  } catch (e) {
+    return "";
   }
+}
+
+async function fetchTokenTxs(address) {
+  const params =
+    "module=account&action=tokentx" +
+    "&contractaddress=" + SOS_CONTRACT +
+    "&address=" + address +
+    "&page=1&offset=" + MAX_TX_SHOW +
+    "&sort=desc";
+
+  let lastErr = null;
+
+  // 1) Blockscout (no API key required)
+  try {
+    const url = "https://eth.blockscout.com/api?" + params;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data && (data.status === "1" || data.message === "OK") && Array.isArray(data.result)) {
+      return data.result;
+    }
+    lastErr = new Error((data && data.result) || (data && data.message) || "Blockscout empty");
+  } catch (err) {
+    lastErr = err;
+    console.warn("Blockscout failed", err);
+  }
+
+  // 2) Optional: if user later adds a free Etherscan key, set window.ETHERSCAN_API_KEY
+  if (window.ETHERSCAN_API_KEY) {
+    try {
+      const url =
+        "https://api.etherscan.io/v2/api?chainid=1&" + params +
+        "&apikey=" + encodeURIComponent(window.ETHERSCAN_API_KEY);
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data && data.status === "1" && Array.isArray(data.result)) {
+        return data.result;
+      }
+      lastErr = new Error((data && data.result) || "Etherscan error");
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+
+  throw lastErr || new Error("Could not load token transfers");
 }
 
 async function loadHistory(address) {
   const historyDiv = document.getElementById("history");
-  historyDiv.innerHTML = '<div class="loading">Loading events…</div>';
+  historyDiv.innerHTML = '<div class="loading">Loading token transfers…</div>';
 
   try {
-    await withProvider(async (c, provider) => {
-      const latest = await provider.getBlockNumber();
-      const addrTopic = ethers.zeroPadValue(address, 32);
+    setStatus("Loading token transfers…");
+    const txs = await fetchTokenTxs(address);
 
-      // Prefer native Pushed event; also include Transfer
-      const pushedTopic = ethers.id("Pushed(address,address,uint256)");
-      const transferTopic = ethers.id("Transfer(address,address,uint256)");
+    if (!txs || txs.length === 0) {
+      historyDiv.innerHTML =
+        '<div class="event">No SOS token transfers found for this address.</div>' +
+        '<div class="event meta"><a href="https://etherscan.io/address/' +
+        address + '#tokentxns" target="_blank" rel="noopener">Open on Etherscan →</a></div>';
+      return;
+    }
 
-      const collected = [];
-      const seen = new Set();
+    const shown = txs.slice(0, MAX_TX_SHOW);
+    let html = "";
 
-      let toBlock = latest;
-      let scanned = 0;
+    for (const tx of shown) {
+      const from = (tx.from || "").toLowerCase();
+      const to   = (tx.to || "").toLowerCase();
+      const me   = address.toLowerCase();
+      const val  = tx.value || "0";
+      const isSelf = from === to;
+      const isIn = to === me;
 
-      while (collected.length < MAX_TX_SHOW && scanned < MAX_LOOKBACK) {
-        const fromBlock = Math.max(0, toBlock - CHUNK + 1);
-        setStatus("Scanning blocks " + fromBlock + "–" + toBlock + " (" + collected.length + " found)…");
-
-        // from = address OR to = address for Pushed
-        // eth_getLogs only supports one topic position per query, so 4 queries per chunk
-        const filters = [
-          { address: SOS_CONTRACT, fromBlock, toBlock, topics: [pushedTopic, addrTopic, null] },
-          { address: SOS_CONTRACT, fromBlock, toBlock, topics: [pushedTopic, null, addrTopic] },
-          { address: SOS_CONTRACT, fromBlock, toBlock, topics: [transferTopic, addrTopic, null] },
-          { address: SOS_CONTRACT, fromBlock, toBlock, topics: [transferTopic, null, addrTopic] }
-        ];
-
-        let chunkLogs = [];
-        let hardFail = false;
-
-        for (const f of filters) {
-          try {
-            const logs = await provider.getLogs(f);
-            chunkLogs.push(...logs);
-          } catch (err) {
-            console.warn("getLogs fail", f.topics[0].slice(0, 10), err.message || err);
-            hardFail = true;
-            break;
-          }
-        }
-
-        if (hardFail) {
-          // try half chunk once
-          if (CHUNK > 500 && toBlock - fromBlock + 1 > 500) {
-            const mid = fromBlock + Math.floor((toBlock - fromBlock) / 2);
-            // shrink by setting toBlock to mid for next loop iteration path
-            // simpler: just skip this range and continue (avoid infinite loop)
-            console.warn("skipping failed range", fromBlock, toBlock);
-          } else {
-            throw new Error("RPC rejected log queries for this range");
-          }
-        } else {
-          for (const log of chunkLogs) {
-            const key = log.transactionHash + ":" + log.logIndex;
-            if (seen.has(key)) continue;
-            seen.add(key);
-
-            // decode topics
-            const from = ethers.getAddress("0x" + log.topics[1].slice(26));
-            const to   = ethers.getAddress("0x" + log.topics[2].slice(26));
-            const amount = BigInt(log.data || "0x0");
-            const isPushed = log.topics[0] === pushedTopic;
-
-            collected.push({
-              from,
-              to,
-              amount,
-              blockNumber: log.blockNumber,
-              transactionHash: log.transactionHash,
-              isPushed
-            });
-          }
-        }
-
-        scanned += (toBlock - fromBlock + 1);
-        if (fromBlock === 0) break;
-        toBlock = fromBlock - 1;
+      let dirClass = isIn ? "dir-in" : "dir-out";
+      let dirLabel;
+      if (isSelf) {
+        dirClass = "dir-in";
+        dirLabel = "● Self push";
+      } else if (isIn) {
+        dirLabel = "← Received";
+      } else {
+        dirLabel = "→ Sent";
       }
 
-      // newest first
-      collected.sort((a, b) => b.blockNumber - a.blockNumber);
-      const shown = collected.slice(0, MAX_TX_SHOW);
-
-      if (shown.length === 0) {
-        historyDiv.innerHTML =
-          '<div class="event">No push events found in the last \~' + scanned +
-          ' blocks.<br><span class="meta">Balances are still correct. ' +
-          'If this wallet is active, try again in a minute (RPC limits).</span></div>' +
-          '<div class="event meta"><a href="https://etherscan.io/address/' +
-          address + '#tokentxns" target="_blank" rel="noopener" style="color:#60a5fa">' +
-          'View token transfers on Etherscan →</a></div>';
-        return;
-      }
-
-      let html = "";
-      for (const e of shown) {
-        const isIn = e.to.toLowerCase() === address.toLowerCase();
-        const isSelf = e.from.toLowerCase() === e.to.toLowerCase();
-        let dirClass = isIn ? "dir-in" : "dir-out";
-        let dirLabel;
-        if (isSelf) {
-          dirClass = "dir-in";
-          dirLabel = "● Self push";
-        } else if (isIn) {
-          dirLabel = "← Received";
-        } else {
-          dirLabel = "→ Sent";
-        }
-        const counterparty = isIn ? e.from : e.to;
-
-        html +=
-          '<div class="event">' +
-            '<div class="' + dirClass + '">' + dirLabel + " " + e.amount.toString() + " SOS</div>" +
-            '<div class="meta">' +
-              (isSelf ? "self" : (isIn ? "from" : "to")) + ": " + short(counterparty) +
-              " · block " + e.blockNumber +
-              (e.isPushed ? " · Pushed" : " · Transfer") +
-            "</div>" +
-            '<a href="https://etherscan.io/tx/' + e.transactionHash +
-              '" target="_blank" rel="noopener">tx ' +
-              e.transactionHash.slice(0, 10) + "…</a>" +
-          "</div>";
-      }
+      const counterparty = isIn ? tx.from : tx.to;
+      const when = formatTime(tx.timeStamp);
+      const method = tx.functionName ? tx.functionName.split("(")[0] : "";
 
       html +=
-        '<div class="event meta">Showing last ' + shown.length +
-        (collected.length > MAX_TX_SHOW ? " of " + collected.length + "+" : "") +
-        " events.</div>";
+        '<div class="event">' +
+          '<div class="' + dirClass + '">' + dirLabel + " " + val + " SOS</div>" +
+          '<div class="meta">' +
+            (isSelf ? "self" : (isIn ? "from" : "to")) + ": " + short(counterparty) +
+            " · block " + (tx.blockNumber || "?") +
+            (method ? " · " + method : "") +
+            (when ? " · " + when : "") +
+          "</div>" +
+          '<a href="https://etherscan.io/tx/' + tx.hash +
+            '" target="_blank" rel="noopener">tx ' +
+            (tx.hash || "").slice(0, 10) + "…</a>" +
+        "</div>";
+    }
 
-      historyDiv.innerHTML = html;
-    });
+    html +=
+      '<div class="event meta">Showing last ' + shown.length +
+      " transfer" + (shown.length === 1 ? "" : "s") +
+      '. <a href="https://etherscan.io/address/' + address +
+      '#tokentxns" target="_blank" rel="noopener">Full list on Etherscan →</a></div>';
+
+    historyDiv.innerHTML = html;
   } catch (err) {
     console.error(err);
-    const msg = err.shortMessage || err.message || String(err);
+    const msg = err.message || String(err);
     historyDiv.innerHTML =
       '<div class="event error">Could not load history: ' + msg + "</div>" +
-      '<div class="event meta">Balances above are still valid. ' +
-      '<a href="https://etherscan.io/address/' +
-      document.getElementById("viewAddress").innerText +
+      '<div class="event meta">' +
+      '<a href="https://etherscan.io/address/' + address +
       '#tokentxns" target="_blank" rel="noopener" style="color:#60a5fa">' +
       "Open token transfers on Etherscan →</a></div>";
   }
@@ -401,7 +355,6 @@ async function lookup(rawAddress) {
     setStatus("Loading balances…");
     await loadBalances(address);
 
-    setStatus("Loading history…");
     await loadHistory(address);
 
     setStatus("Done");
