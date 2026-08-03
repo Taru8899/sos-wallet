@@ -99,7 +99,7 @@
   <div class="card">
     <h2>Push history</h2>
     <p style="color:#9ca3af;font-size:14px;margin-bottom:10px">
-      Last 20 SOS token transfers (same source as Etherscan Token Transfers).
+      Last 10 SOS token transfers (same source as Etherscan Token Transfers).
     </p>
     <div id="history">No data yet. Enter an address above.</div>
   </div>
@@ -125,19 +125,13 @@
 // ===============================
 
 const SOS_CONTRACT = "0x61af906f53Eb927790055AC8eA99916a01873c15";
-const MAX_TX_SHOW = 20;
+const MAX_TX_SHOW = 10;
 
 const RPC_LIST = [
   "https://ethereum.publicnode.com",
   "https://rpc.ankr.com/eth",
   "https://eth.llamarpc.com",
   "https://1rpc.io/eth"
-];
-
-// Free explorer APIs (no key) — same data as Etherscan tokentxns
-const EXPLORER_APIS = [
-  "https://eth.blockscout.com/api",
-  "https://api.etherscan.io/v2/api?chainid=1"
 ];
 
 const SOS_ABI = [
@@ -234,13 +228,13 @@ async function fetchTokenTxs(address) {
 
   let lastErr = null;
 
-  // 1) Blockscout (no API key required)
+  // Blockscout (no API key required)
   try {
     const url = "https://eth.blockscout.com/api?" + params;
     const res = await fetch(url);
     const data = await res.json();
     if (data && (data.status === "1" || data.message === "OK") && Array.isArray(data.result)) {
-      return data.result;
+      return data.result.slice(0, MAX_TX_SHOW);
     }
     lastErr = new Error((data && data.result) || (data && data.message) || "Blockscout empty");
   } catch (err) {
@@ -248,7 +242,7 @@ async function fetchTokenTxs(address) {
     console.warn("Blockscout failed", err);
   }
 
-  // 2) Optional: if user later adds a free Etherscan key, set window.ETHERSCAN_API_KEY
+  // Optional: free Etherscan key via window.ETHERSCAN_API_KEY
   if (window.ETHERSCAN_API_KEY) {
     try {
       const url =
@@ -257,7 +251,7 @@ async function fetchTokenTxs(address) {
       const res = await fetch(url);
       const data = await res.json();
       if (data && data.status === "1" && Array.isArray(data.result)) {
-        return data.result;
+        return data.result.slice(0, MAX_TX_SHOW);
       }
       lastErr = new Error((data && data.result) || "Etherscan error");
     } catch (err) {
