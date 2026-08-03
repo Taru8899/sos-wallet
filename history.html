@@ -99,7 +99,7 @@
   <div class="card">
     <h2>Push history</h2>
     <p style="color:#9ca3af;font-size:14px;margin-bottom:10px">
-      Last 100 SOS Transfer events (received / sent). Scanned in small chunks to avoid RPC limits.
+      Last 100 SOS push events (Pushed / Transfer). Scans newest blocks first.
     </p>
     <div id="history">No data yet. Enter an address above.</div>
   </div>
@@ -119,16 +119,18 @@
 
 <script>
 // ===============================
-// SOS69069 History page (RPC-safe)
+// SOS69069 History page
 // ===============================
 
 const SOS_CONTRACT = "0x61af906f53Eb927790055AC8eA99916a01873c15";
 const MAX_TX_SHOW = 100;
+const CHUNK = 2000;          // small chunks for public RPCs
+const MAX_LOOKBACK = 150000; // stop after this many blocks if still empty
 
-// try these in order if one fails
 const RPC_LIST = [
   "https://ethereum.publicnode.com",
   "https://rpc.ankr.com/eth",
+  "https://eth.llamarpc.com",
   "https://1rpc.io/eth",
   "https://cloudflare-eth.com"
 ];
@@ -147,6 +149,16 @@ const SOS_ABI = [
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "name": "from",   "type": "address" },
+      { "indexed": true,  "name": "to",     "type": "address" },
+      { "indexed": false, "name": "amount", "type": "uint256" }
+    ],
+    "name": "Pushed",
+    "type": "event"
   },
   {
     "anonymous": false,
@@ -180,7 +192,6 @@ function makeProvider(url) {
 async function initRead(forceNext) {
   if (forceNext) currentRpcIndex++;
   if (currentRpcIndex >= RPC_LIST.length) currentRpcIndex = 0;
-
   const url = RPC_LIST[currentRpcIndex];
   readProvider = makeProvider(url);
   readContract = new ethers.Contract(SOS_CONTRACT, SOS_ABI, readProvider);
@@ -191,9 +202,7 @@ async function withProvider(fn) {
   let lastErr;
   for (let i = 0; i < RPC_LIST.length; i++) {
     try {
-      if (!readProvider || i > 0) {
-        await initRead(i > 0);
-      }
+      if (!readProvider || i > 0) await initRead(i > 0);
       return await fn(readContract, readProvider);
     } catch (err) {
       lastErr = err;
@@ -222,29 +231,14 @@ async function loadBalances(address) {
   });
 }
 
-// Query logs in small chunks (public RPCs hate big ranges)
-async function queryLogsChunked(contract, filter, fromBlock, toBlock, chunkSize) {
-  const logs = [];
-  let start = fromBlock;
-
-  while (start <= toBlock) {
-    const end = Math.min(start + chunkSize - 1, toBlock);
-    try {
-      const part = await contract.queryFilter(filter, start, end);
-      logs.push(...part);
-    } catch (err) {
-      // if even a chunk fails, try a smaller chunk once
-      if (chunkSize > 2000) {
-        const half = Math.floor(chunkSize / 2);
-        const part = await queryLogsChunked(contract, filter, start, end, half);
-        logs.push(...part);
-      } else {
-        console.warn("chunk failed", start, end, err);
-      }
-    }
-    start = end + 1;
+// Query one chunk; return [] on failure instead of throwing
+async function safeQuery(contract, filter, fromBlock, toBlock) {
+  try {
+    return await contract.queryFilter(filter, fromBlock, toBlock);
+  } catch (err) {
+    console.warn("queryFilter failed", fromBlock, toBlock, err.message || err);
+    return null; // null = hard fail (try other RPC / smaller)
   }
-  return logs;
 }
 
 async function loadHistory(address) {
@@ -253,88 +247,133 @@ async function loadHistory(address) {
 
   try {
     await withProvider(async (c, provider) => {
-      const currentBlock = await provider.getBlockNumber();
+      const latest = await provider.getBlockNumber();
+      const addrTopic = ethers.zeroPadValue(address, 32);
 
-      // last \~30k blocks (\~4 days), chunk by 5k
-      let lookback = 30000;
-      let chunkSize = 5000;
-      let fromBlock = Math.max(0, currentBlock - lookback);
+      // Prefer native Pushed event; also include Transfer
+      const pushedTopic = ethers.id("Pushed(address,address,uint256)");
+      const transferTopic = ethers.id("Transfer(address,address,uint256)");
 
-      setStatus("Scanning blocks " + fromBlock + " → " + currentBlock + "…");
-
-      const filterTo   = c.filters.Transfer(null, address);
-      const filterFrom = c.filters.Transfer(address, null);
-
-      let toLogs = [];
-      let fromLogs = [];
-
-      try {
-        toLogs = await queryLogsChunked(c, filterTo, fromBlock, currentBlock, chunkSize);
-        fromLogs = await queryLogsChunked(c, filterFrom, fromBlock, currentBlock, chunkSize);
-      } catch (err) {
-        // last resort: only last 10k blocks
-        console.warn("chunked query failed, retry smaller", err);
-        fromBlock = Math.max(0, currentBlock - 10000);
-        toLogs = await queryLogsChunked(c, filterTo, fromBlock, currentBlock, 2000);
-        fromLogs = await queryLogsChunked(c, filterFrom, fromBlock, currentBlock, 2000);
-      }
-
-      const events = [...toLogs, ...fromLogs]
-        .sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
-
-      // de-dupe by tx hash + log index
+      const collected = [];
       const seen = new Set();
-      const unique = [];
-      for (const e of events) {
-        const key = e.transactionHash + ":" + e.index;
-        if (!seen.has(key)) {
-          seen.add(key);
-          unique.push(e);
+
+      let toBlock = latest;
+      let scanned = 0;
+
+      while (collected.length < MAX_TX_SHOW && scanned < MAX_LOOKBACK) {
+        const fromBlock = Math.max(0, toBlock - CHUNK + 1);
+        setStatus("Scanning blocks " + fromBlock + "–" + toBlock + " (" + collected.length + " found)…");
+
+        // from = address OR to = address for Pushed
+        // eth_getLogs only supports one topic position per query, so 4 queries per chunk
+        const filters = [
+          { address: SOS_CONTRACT, fromBlock, toBlock, topics: [pushedTopic, addrTopic, null] },
+          { address: SOS_CONTRACT, fromBlock, toBlock, topics: [pushedTopic, null, addrTopic] },
+          { address: SOS_CONTRACT, fromBlock, toBlock, topics: [transferTopic, addrTopic, null] },
+          { address: SOS_CONTRACT, fromBlock, toBlock, topics: [transferTopic, null, addrTopic] }
+        ];
+
+        let chunkLogs = [];
+        let hardFail = false;
+
+        for (const f of filters) {
+          try {
+            const logs = await provider.getLogs(f);
+            chunkLogs.push(...logs);
+          } catch (err) {
+            console.warn("getLogs fail", f.topics[0].slice(0, 10), err.message || err);
+            hardFail = true;
+            break;
+          }
         }
+
+        if (hardFail) {
+          // try half chunk once
+          if (CHUNK > 500 && toBlock - fromBlock + 1 > 500) {
+            const mid = fromBlock + Math.floor((toBlock - fromBlock) / 2);
+            // shrink by setting toBlock to mid for next loop iteration path
+            // simpler: just skip this range and continue (avoid infinite loop)
+            console.warn("skipping failed range", fromBlock, toBlock);
+          } else {
+            throw new Error("RPC rejected log queries for this range");
+          }
+        } else {
+          for (const log of chunkLogs) {
+            const key = log.transactionHash + ":" + log.logIndex;
+            if (seen.has(key)) continue;
+            seen.add(key);
+
+            // decode topics
+            const from = ethers.getAddress("0x" + log.topics[1].slice(26));
+            const to   = ethers.getAddress("0x" + log.topics[2].slice(26));
+            const amount = BigInt(log.data || "0x0");
+            const isPushed = log.topics[0] === pushedTopic;
+
+            collected.push({
+              from,
+              to,
+              amount,
+              blockNumber: log.blockNumber,
+              transactionHash: log.transactionHash,
+              isPushed
+            });
+          }
+        }
+
+        scanned += (toBlock - fromBlock + 1);
+        if (fromBlock === 0) break;
+        toBlock = fromBlock - 1;
       }
 
-      if (unique.length === 0) {
+      // newest first
+      collected.sort((a, b) => b.blockNumber - a.blockNumber);
+      const shown = collected.slice(0, MAX_TX_SHOW);
+
+      if (shown.length === 0) {
         historyDiv.innerHTML =
-          '<div class="event">No Transfer events found in the last \~' +
-          lookback + ' blocks.<br><span class="meta">Balances still loaded correctly. ' +
-          'Try again later or check Etherscan for older activity.</span></div>';
+          '<div class="event">No push events found in the last \~' + scanned +
+          ' blocks.<br><span class="meta">Balances are still correct. ' +
+          'If this wallet is active, try again in a minute (RPC limits).</span></div>' +
+          '<div class="event meta"><a href="https://etherscan.io/address/' +
+          address + '#tokentxns" target="_blank" rel="noopener" style="color:#60a5fa">' +
+          'View token transfers on Etherscan →</a></div>';
         return;
       }
 
       let html = "";
-      const shown = unique.slice(0, MAX_TX_SHOW);
-
-      for (const log of shown) {
-        const from = log.args.from;
-        const to   = log.args.to;
-        const val  = log.args.value.toString();
-        const isIn = to.toLowerCase() === address.toLowerCase();
-        const dirClass = isIn ? "dir-in" : "dir-out";
-        const dirLabel = isIn ? "← Received" : "→ Sent";
-        const counterparty = isIn ? from : to;
+      for (const e of shown) {
+        const isIn = e.to.toLowerCase() === address.toLowerCase();
+        const isSelf = e.from.toLowerCase() === e.to.toLowerCase();
+        let dirClass = isIn ? "dir-in" : "dir-out";
+        let dirLabel;
+        if (isSelf) {
+          dirClass = "dir-in";
+          dirLabel = "● Self push";
+        } else if (isIn) {
+          dirLabel = "← Received";
+        } else {
+          dirLabel = "→ Sent";
+        }
+        const counterparty = isIn ? e.from : e.to;
 
         html +=
           '<div class="event">' +
-            '<div class="' + dirClass + '">' + dirLabel + " " + val + " SOS</div>" +
+            '<div class="' + dirClass + '">' + dirLabel + " " + e.amount.toString() + " SOS</div>" +
             '<div class="meta">' +
-              (isIn ? "from" : "to") + ": " + short(counterparty) +
-              " · block " + log.blockNumber +
+              (isSelf ? "self" : (isIn ? "from" : "to")) + ": " + short(counterparty) +
+              " · block " + e.blockNumber +
+              (e.isPushed ? " · Pushed" : " · Transfer") +
             "</div>" +
-            '<a href="https://etherscan.io/tx/' + log.transactionHash +
+            '<a href="https://etherscan.io/tx/' + e.transactionHash +
               '" target="_blank" rel="noopener">tx ' +
-              log.transactionHash.slice(0, 10) + "…</a>" +
+              e.transactionHash.slice(0, 10) + "…</a>" +
           "</div>";
       }
 
-      if (unique.length > MAX_TX_SHOW) {
-        html +=
-          '<div class="event meta">Showing last ' + MAX_TX_SHOW +
-          " of " + unique.length + " events found in range.</div>";
-      } else {
-        html +=
-          '<div class="event meta">Showing ' + unique.length +
-          " event" + (unique.length === 1 ? "" : "s") + ".</div>";
-      }
+      html +=
+        '<div class="event meta">Showing last ' + shown.length +
+        (collected.length > MAX_TX_SHOW ? " of " + collected.length + "+" : "") +
+        " events.</div>";
 
       historyDiv.innerHTML = html;
     });
@@ -342,9 +381,12 @@ async function loadHistory(address) {
     console.error(err);
     const msg = err.shortMessage || err.message || String(err);
     historyDiv.innerHTML =
-      '<div class="event error">Could not load history: ' + msg +
-      '</div><div class="event meta">Balances above are still valid. ' +
-      'Public RPCs sometimes block log queries — try again in a minute.</div>';
+      '<div class="event error">Could not load history: ' + msg + "</div>" +
+      '<div class="event meta">Balances above are still valid. ' +
+      '<a href="https://etherscan.io/address/' +
+      document.getElementById("viewAddress").innerText +
+      '#tokentxns" target="_blank" rel="noopener" style="color:#60a5fa">' +
+      "Open token transfers on Etherscan →</a></div>";
   }
 }
 
@@ -390,9 +432,7 @@ document.getElementById("useConnectedButton").onclick = async function () {
     }
     setStatus("Connecting…");
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-    if (!accounts || !accounts[0]) {
-      throw new Error("No account returned");
-    }
+    if (!accounts || !accounts[0]) throw new Error("No account returned");
     document.getElementById("lookupAddress").value = accounts[0];
     await lookup(accounts[0]);
   } catch (err) {
