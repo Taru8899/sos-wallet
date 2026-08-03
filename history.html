@@ -57,14 +57,8 @@
   .loading {
     color: #60a5fa;
   }
-  .balance-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .balance-row span {
-    font-weight: bold;
+  .error {
+    color: #ef4444;
   }
 </style>
 
@@ -77,7 +71,6 @@
   <h1>SOS69069 History</h1>
   <p class="subtitle">Look up any wallet · Trust / Push / Effective</p>
 
-  <!-- Lookup -->
   <div class="card">
     <h2>Lookup</h2>
     <input id="lookupAddress" placeholder="Paste any address 0x...">
@@ -87,7 +80,6 @@
     <div id="status">Ready</div>
   </div>
 
-  <!-- Balances -->
   <div class="card">
     <h2>Balances</h2>
     <p>Address:</p>
@@ -104,17 +96,14 @@
     </p>
   </div>
 
-  <!-- History -->
   <div class="card">
     <h2>Push history</h2>
     <p style="color:#9ca3af;font-size:14px;margin-bottom:10px">
-      Recent SOS Transfer events involving this address
-      (received / sent). Limited to the last \~200k blocks.
+      Recent SOS Transfer events (received / sent). Scanned in small chunks to avoid RPC limits.
     </p>
     <div id="history">No data yet. Enter an address above.</div>
   </div>
 
-  <!-- Nav -->
   <div class="card nav-links">
     <p style="margin-bottom:12px;color:#9ca3af;font-size:14px">More</p>
     <a href="index.html" class="wallet">Wallet</a>
@@ -130,11 +119,18 @@
 
 <script>
 // ===============================
-// SOS69069 History page
+// SOS69069 History page (RPC-safe)
 // ===============================
 
 const SOS_CONTRACT = "0x61af906f53Eb927790055AC8eA99916a01873c15";
-const PUBLIC_RPC = "https://ethereum.publicnode.com";
+
+// try these in order if one fails
+const RPC_LIST = [
+  "https://ethereum.publicnode.com",
+  "https://rpc.ankr.com/eth",
+  "https://1rpc.io/eth",
+  "https://cloudflare-eth.com"
+];
 
 const SOS_ABI = [
   {
@@ -165,6 +161,7 @@ const SOS_ABI = [
 
 let readProvider = null;
 let readContract = null;
+let currentRpcIndex = 0;
 
 function setStatus(msg) {
   document.getElementById("status").innerText = msg;
@@ -175,107 +172,175 @@ function short(addr) {
   return addr.slice(0, 6) + "…" + addr.slice(-4);
 }
 
-function getReadProvider() {
-  if (!readProvider) {
-    readProvider = new ethers.JsonRpcProvider(PUBLIC_RPC);
-  }
-  return readProvider;
+function makeProvider(url) {
+  return new ethers.JsonRpcProvider(url, 1, { staticNetwork: true });
 }
 
-function getReadContract() {
-  if (!readContract) {
-    readContract = new ethers.Contract(SOS_CONTRACT, SOS_ABI, getReadProvider());
+async function initRead(forceNext) {
+  if (forceNext) currentRpcIndex++;
+  if (currentRpcIndex >= RPC_LIST.length) currentRpcIndex = 0;
+
+  const url = RPC_LIST[currentRpcIndex];
+  readProvider = makeProvider(url);
+  readContract = new ethers.Contract(SOS_CONTRACT, SOS_ABI, readProvider);
+  return url;
+}
+
+async function withProvider(fn) {
+  let lastErr;
+  for (let i = 0; i < RPC_LIST.length; i++) {
+    try {
+      if (!readProvider || i > 0) {
+        await initRead(i > 0);
+      }
+      return await fn(readContract, readProvider);
+    } catch (err) {
+      lastErr = err;
+      console.warn("RPC failed:", RPC_LIST[currentRpcIndex], err);
+      readProvider = null;
+      readContract = null;
+    }
   }
-  return readContract;
+  throw lastErr || new Error("All RPCs failed");
 }
 
 async function loadBalances(address) {
-  const c = getReadContract();
-  const trust = await c.balanceOf(address);
-  const push  = await c.pushCountOf(address);
-  const effective = BigInt(trust) - BigInt(push);
+  await withProvider(async (c) => {
+    const trust = await c.balanceOf(address);
+    const push  = await c.pushCountOf(address);
+    const effective = BigInt(trust) - BigInt(push);
 
-  document.getElementById("viewAddress").innerText = address;
-  document.getElementById("trust").innerText = trust.toString();
-  document.getElementById("push").innerText = push.toString();
-  document.getElementById("effective").innerText = effective.toString();
+    document.getElementById("viewAddress").innerText = address;
+    document.getElementById("trust").innerText = trust.toString();
+    document.getElementById("push").innerText = push.toString();
+    document.getElementById("effective").innerText = effective.toString();
 
-  const link = document.getElementById("etherscanLink");
-  link.href = "https://etherscan.io/token/" + SOS_CONTRACT + "?a=" + address;
-  link.innerText = "Open on Etherscan →";
+    const link = document.getElementById("etherscanLink");
+    link.href = "https://etherscan.io/token/" + SOS_CONTRACT + "?a=" + address;
+    link.innerText = "Open on Etherscan →";
+  });
+}
+
+// Query logs in small chunks (public RPCs hate big ranges)
+async function queryLogsChunked(contract, filter, fromBlock, toBlock, chunkSize) {
+  const logs = [];
+  let start = fromBlock;
+
+  while (start <= toBlock) {
+    const end = Math.min(start + chunkSize - 1, toBlock);
+    try {
+      const part = await contract.queryFilter(filter, start, end);
+      logs.push(...part);
+    } catch (err) {
+      // if even a chunk fails, try a smaller chunk once
+      if (chunkSize > 2000) {
+        const half = Math.floor(chunkSize / 2);
+        const part = await queryLogsChunked(contract, filter, start, end, half);
+        logs.push(...part);
+      } else {
+        console.warn("chunk failed", start, end, err);
+      }
+    }
+    start = end + 1;
+  }
+  return logs;
 }
 
 async function loadHistory(address) {
   const historyDiv = document.getElementById("history");
   historyDiv.innerHTML = '<div class="loading">Loading events…</div>';
 
-  const c = getReadContract();
-  const provider = getReadProvider();
-  const currentBlock = await provider.getBlockNumber();
-
-  // \~200k blocks ≈ last few weeks on Ethereum
-  const fromBlock = Math.max(0, currentBlock - 200000);
-
-  const filterTo   = c.filters.Transfer(null, address);
-  const filterFrom = c.filters.Transfer(address, null);
-
-  let toLogs = [];
-  let fromLogs = [];
-
   try {
-    [toLogs, fromLogs] = await Promise.all([
-      c.queryFilter(filterTo, fromBlock, currentBlock),
-      c.queryFilter(filterFrom, fromBlock, currentBlock)
-    ]);
+    await withProvider(async (c, provider) => {
+      const currentBlock = await provider.getBlockNumber();
+
+      // start small: last \~30k blocks (\~4 days), chunk by 5k
+      let lookback = 30000;
+      let chunkSize = 5000;
+      let fromBlock = Math.max(0, currentBlock - lookback);
+
+      setStatus("Scanning blocks " + fromBlock + " → " + currentBlock + "…");
+
+      const filterTo   = c.filters.Transfer(null, address);
+      const filterFrom = c.filters.Transfer(address, null);
+
+      let toLogs = [];
+      let fromLogs = [];
+
+      try {
+        toLogs = await queryLogsChunked(c, filterTo, fromBlock, currentBlock, chunkSize);
+        fromLogs = await queryLogsChunked(c, filterFrom, fromBlock, currentBlock, chunkSize);
+      } catch (err) {
+        // last resort: only last 10k blocks
+        console.warn("chunked query failed, retry smaller", err);
+        fromBlock = Math.max(0, currentBlock - 10000);
+        toLogs = await queryLogsChunked(c, filterTo, fromBlock, currentBlock, 2000);
+        fromLogs = await queryLogsChunked(c, filterFrom, fromBlock, currentBlock, 2000);
+      }
+
+      const events = [...toLogs, ...fromLogs]
+        .sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
+
+      // de-dupe by tx hash + log index
+      const seen = new Set();
+      const unique = [];
+      for (const e of events) {
+        const key = e.transactionHash + ":" + e.index;
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push(e);
+        }
+      }
+
+      if (unique.length === 0) {
+        historyDiv.innerHTML =
+          '<div class="event">No Transfer events found in the last \~' +
+          lookback + ' blocks.<br><span class="meta">Balances still loaded correctly. ' +
+          'Try again later or check Etherscan for older activity.</span></div>';
+        return;
+      }
+
+      let html = "";
+      const maxShow = 50;
+
+      for (const log of unique.slice(0, maxShow)) {
+        const from = log.args.from;
+        const to   = log.args.to;
+        const val  = log.args.value.toString();
+        const isIn = to.toLowerCase() === address.toLowerCase();
+        const dirClass = isIn ? "dir-in" : "dir-out";
+        const dirLabel = isIn ? "← Received" : "→ Sent";
+        const counterparty = isIn ? from : to;
+
+        html +=
+          '<div class="event">' +
+            '<div class="' + dirClass + '">' + dirLabel + " " + val + " SOS</div>" +
+            '<div class="meta">' +
+              (isIn ? "from" : "to") + ": " + short(counterparty) +
+              " · block " + log.blockNumber +
+            "</div>" +
+            '<a href="https://etherscan.io/tx/' + log.transactionHash +
+              '" target="_blank" rel="noopener">tx ' +
+              log.transactionHash.slice(0, 10) + "…</a>" +
+          "</div>";
+      }
+
+      if (unique.length > maxShow) {
+        html +=
+          '<div class="event meta">Showing latest ' + maxShow +
+          " of " + unique.length + " events in range.</div>";
+      }
+
+      historyDiv.innerHTML = html;
+    });
   } catch (err) {
     console.error(err);
-    // fallback: smaller range if RPC rejects the big query
-    const smallerFrom = Math.max(0, currentBlock - 50000);
-    [toLogs, fromLogs] = await Promise.all([
-      c.queryFilter(filterTo, smallerFrom, currentBlock),
-      c.queryFilter(filterFrom, smallerFrom, currentBlock)
-    ]);
+    const msg = err.shortMessage || err.message || String(err);
+    historyDiv.innerHTML =
+      '<div class="event error">Could not load history: ' + msg +
+      '</div><div class="event meta">Balances above are still valid. ' +
+      'Public RPCs sometimes block log queries — try again in a minute.</div>';
   }
-
-  const events = [...toLogs, ...fromLogs]
-    .sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
-
-  if (events.length === 0) {
-    historyDiv.innerHTML = '<div class="event">No Transfer events found in the scanned range.</div>';
-    return;
-  }
-
-  let html = "";
-  const maxShow = 50;
-
-  for (const log of events.slice(0, maxShow)) {
-    const from = log.args.from;
-    const to   = log.args.to;
-    const val  = log.args.value.toString();
-    const isIn = to.toLowerCase() === address.toLowerCase();
-    const dirClass = isIn ? "dir-in" : "dir-out";
-    const dirLabel = isIn ? "← Received" : "→ Sent";
-    const counterparty = isIn ? from : to;
-
-    html += `
-      <div class="event">
-        <div class="\( {dirClass}"> \){dirLabel} ${val} SOS</div>
-        <div class="meta">
-          ${isIn ? "from" : "to"}: ${short(counterparty)}
-          · block ${log.blockNumber}
-        </div>
-        <a href="https://etherscan.io/tx/${log.transactionHash}" target="_blank" rel="noopener">
-          tx ${log.transactionHash.slice(0, 10)}…
-        </a>
-      </div>
-    `;
-  }
-
-  if (events.length > maxShow) {
-    html += `<div class="event meta">Showing latest ${maxShow} of ${events.length} events.</div>`;
-  }
-
-  historyDiv.innerHTML = html;
 }
 
 async function lookup(rawAddress) {
@@ -294,7 +359,6 @@ async function lookup(rawAddress) {
 
     setStatus("Done");
 
-    // keep URL shareable
     const url = new URL(window.location.href);
     url.searchParams.set("address", address);
     window.history.replaceState({}, "", url);
@@ -332,16 +396,12 @@ document.getElementById("useConnectedButton").onclick = async function () {
   }
 };
 
-// support ?address=0x...
 window.addEventListener("load", function () {
   const params = new URLSearchParams(window.location.search);
   const a = params.get("address");
   if (a) {
     document.getElementById("lookupAddress").value = a;
-    // wait briefly for ethers module
-    setTimeout(function () {
-      lookup(a);
-    }, 300);
+    setTimeout(function () { lookup(a); }, 400);
   }
 });
 </script>
