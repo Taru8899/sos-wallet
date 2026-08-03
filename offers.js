@@ -1,11 +1,11 @@
 let walletAddress = "";
 const LOCAL_KEY = "sos69069_pending_offers_v1";
+const REP_KEY = "sos69069_rep_v1";
 const OFFERS_JSON_URL = "offers.json";
 
 let communityOffers = [];
 let pendingOffers = [];
-let ethUsdPrice = null; // 1 ETH in USDC
-
+let ethUsdPrice = null;
 
 const connectButton = document.getElementById("connectButton");
 const postOfferBtn = document.getElementById("postOfferBtn");
@@ -16,6 +16,7 @@ const reloadJsonBtn = document.getElementById("reloadJsonBtn");
 postOfferBtn.disabled = true;
 signOfferBtn.disabled = true;
 
+// ---------- CONNECT ----------
 connectButton.onclick = async function () {
   try {
     document.getElementById("status").innerText = "Connecting...";
@@ -50,16 +51,39 @@ document.getElementById("methodChips").addEventListener("click", (e) => {
   e.target.classList.add("chip-active");
 });
 
+// ---------- STORAGE ----------
 function loadPending() {
-  try {
-    return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]");
-  } catch {
-    return [];
-  }
+  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); }
+  catch { return []; }
 }
-
 function savePending(list) {
   localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
+}
+
+function loadRep() {
+  try { return JSON.parse(localStorage.getItem(REP_KEY) || "{}"); }
+  catch { return {}; }
+}
+function saveRep(rep) {
+  localStorage.setItem(REP_KEY, JSON.stringify(rep));
+}
+/** Lightweight local reputation from deal outcomes (mint-based evidence). */
+function bumpRep(address, field) {
+  if (!address) return;
+  const key = address.toLowerCase();
+  const rep = loadRep();
+  if (!rep[key]) rep[key] = { closes: 0, accepts: 0, abandons: 0 };
+  rep[key][field] = (rep[key][field] || 0) + 1;
+  saveRep(rep);
+}
+function getRepLine(address) {
+  const r = loadRep()[address.toLowerCase()];
+  if (!r) return "";
+  const parts = [];
+  if (r.closes) parts.push(r.closes + " closed");
+  if (r.accepts) parts.push(r.accepts + " accepted");
+  if (r.abandons) parts.push(r.abandons + " abandoned");
+  return parts.length ? "Rep (local): " + parts.join(" · ") : "";
 }
 
 async function fetchCommunityOffers() {
@@ -80,6 +104,25 @@ function allOffers() {
   return [...extra, ...communityOffers];
 }
 
+function persistOfferUpdate(offer) {
+  pendingOffers = loadPending();
+  const pi = pendingOffers.findIndex(o => o.id === offer.id);
+  if (pi !== -1) {
+    pendingOffers[pi] = offer;
+  } else {
+    pendingOffers.unshift(offer);
+  }
+  savePending(pendingOffers);
+
+  const ci = communityOffers.findIndex(o => o.id === offer.id);
+  if (ci !== -1) communityOffers[ci] = offer;
+}
+
+function findOffer(id) {
+  return allOffers().find(o => o.id === id);
+}
+
+// ---------- FORM / POST ----------
 function collectForm() {
   const type = document.getElementById("offerType").value;
   const amount = document.getElementById("offerAmount").value.trim();
@@ -115,10 +158,14 @@ function collectForm() {
     note,
     poster: walletAddress,
     createdAt: new Date().toISOString(),
+    status: "open",
     filled: false,
     signature: null,
     signedMessage: null,
-    mintTx: null
+    mintTx: null,
+    accepts: [],
+    closeTx: null,
+    closedAt: null
   };
 }
 
@@ -131,8 +178,8 @@ function clearForm() {
   document.querySelectorAll("#methodChips button").forEach(b => b.classList.remove("chip-active"));
 }
 
-async function mintOneToPoster() {
-  document.getElementById("status").innerText = "Minting 1 SOS to you (confirm in wallet)…";
+async function mintOne() {
+  document.getElementById("status").innerText = "Confirm pushForMe in wallet (1 SOS)…";
   const receipt = await pushForMe();
   return receipt.hash;
 }
@@ -159,17 +206,18 @@ async function finishPost(offer, doSign) {
     }
   }
 
-  if (doSign) {
-    const message =
-      "SOS69069 Offer\n" +
-      "Type: " + offer.type + "\n" +
-      "Amount: " + offer.amount + " SOS\n" +
-      "Price: " + offer.price + "\n" +
-      "Method: " + offer.method + "\n" +
-      "Contact: " + offer.contact + "\n" +
-      "Poster: " + offer.poster + "\n" +
-      "Time: " + offer.createdAt;
+  const message =
+    "SOS69069 Offer\n" +
+    "Id: " + offer.id + "\n" +
+    "Type: " + offer.type + "\n" +
+    "Amount: " + offer.amount + " SOS\n" +
+    "Price: " + offer.price + "\n" +
+    "Method: " + offer.method + "\n" +
+    "Contact: " + offer.contact + "\n" +
+    "Poster: " + offer.poster + "\n" +
+    "Time: " + offer.createdAt;
 
+  if (doSign) {
     document.getElementById("status").innerText = "Waiting for signature…";
     try {
       offer.signature = await signer.signMessage(message);
@@ -178,11 +226,12 @@ async function finishPost(offer, doSign) {
       document.getElementById("status").innerText = err.shortMessage || err.message;
       return;
     }
+  } else {
+    offer.signedMessage = message;
   }
 
   try {
-    const txHash = await mintOneToPoster();
-    offer.mintTx = txHash;
+    offer.mintTx = await mintOne();
   } catch (err) {
     console.error(err);
     document.getElementById("status").innerText = err.shortMessage || err.message;
@@ -197,7 +246,7 @@ async function finishPost(offer, doSign) {
   await refreshWallet();
   renderOffers();
   document.getElementById("status").innerText =
-    "Offer posted + 1 SOS minted. Download offers.json and commit it so others see your listing.";
+    "Offer posted + 1 SOS minted. Download offers.json and commit so others see it.";
 }
 
 postOfferBtn.onclick = async function () {
@@ -212,8 +261,129 @@ signOfferBtn.onclick = async function () {
   await finishPost(offer, true);
 };
 
+// ---------- HANDSHAKE: ACCEPT / CLOSE ----------
+async function acceptOffer(id) {
+  if (!walletAddress || !contract || !signer) {
+    alert("Connect wallet first");
+    return;
+  }
+  const offer = findOffer(id);
+  if (!offer) return;
+  if (offer.filled || offer.status === "closed") {
+    alert("This offer is already closed");
+    return;
+  }
+  if (offer.poster.toLowerCase() === walletAddress.toLowerCase()) {
+    alert("You cannot accept your own offer");
+    return;
+  }
+  if ((offer.accepts || []).some(a => a.address.toLowerCase() === walletAddress.toLowerCase())) {
+    alert("You already accepted this offer");
+    return;
+  }
+
+  const acceptMsg =
+    "SOS69069 Accept\n" +
+    "OfferId: " + offer.id + "\n" +
+    "Acceptor: " + walletAddress + "\n" +
+    "Poster: " + offer.poster + "\n" +
+    "Time: " + new Date().toISOString();
+
+  let sig = null;
+  try {
+    document.getElementById("status").innerText = "Sign accept message…";
+    sig = await signer.signMessage(acceptMsg);
+  } catch (err) {
+    document.getElementById("status").innerText = err.shortMessage || err.message;
+    return;
+  }
+
+  let mintTx;
+  try {
+    mintTx = await mintOne();
+  } catch (err) {
+    console.error(err);
+    document.getElementById("status").innerText = err.shortMessage || err.message;
+    return;
+  }
+
+  if (!offer.accepts) offer.accepts = [];
+  offer.accepts.push({
+    address: walletAddress,
+    mintTx,
+    at: new Date().toISOString(),
+    signature: sig,
+    signedMessage: acceptMsg
+  });
+  offer.status = "accepted";
+  persistOfferUpdate(offer);
+  bumpRep(walletAddress, "accepts");
+
+  await refreshWallet();
+  renderOffers();
+  document.getElementById("status").innerText =
+    "Deal accepted (1 SOS minted). Pay as agreed, then poster closes the deal. Download offers.json to publish.";
+}
+
+async function closeOffer(id) {
+  if (!walletAddress || !contract || !signer) {
+    alert("Connect wallet first");
+    return;
+  }
+  const offer = findOffer(id);
+  if (!offer) return;
+  if (offer.poster.toLowerCase() !== walletAddress.toLowerCase()) {
+    alert("Only the poster can close this deal");
+    return;
+  }
+  if (offer.filled || offer.status === "closed") {
+    alert("Already closed");
+    return;
+  }
+  if (!offer.accepts || offer.accepts.length === 0) {
+    const ok = confirm("No on-chain accept yet. Close anyway?");
+    if (!ok) return;
+  }
+
+  let closeTx;
+  try {
+    closeTx = await mintOne();
+  } catch (err) {
+    console.error(err);
+    document.getElementById("status").innerText = err.shortMessage || err.message;
+    return;
+  }
+
+  offer.status = "closed";
+  offer.filled = true;
+  offer.closeTx = closeTx;
+  offer.closedAt = new Date().toISOString();
+  persistOfferUpdate(offer);
+  bumpRep(walletAddress, "closes");
+  (offer.accepts || []).forEach(a => bumpRep(a.address, "closes"));
+
+  await refreshWallet();
+  renderOffers();
+  document.getElementById("status").innerText =
+    "Deal closed (1 SOS minted). Download offers.json and commit to update the public list.";
+}
+
+function markAbandon(offerId, acceptorAddress) {
+  const offer = findOffer(offerId);
+  if (!offer || !walletAddress) return;
+  if (offer.poster.toLowerCase() !== walletAddress.toLowerCase()) {
+    alert("Only the poster can flag abandon");
+    return;
+  }
+  bumpRep(acceptorAddress, "abandons");
+  document.getElementById("status").innerText =
+    "Flagged abandon (local reputation). Commit offers.json if you also close/cancel the offer.";
+  renderOffers();
+}
+
+// ---------- JSON ----------
 downloadJsonBtn.onclick = function () {
-  const merged = allOffers().filter(o => !o.filled);
+  const merged = allOffers();
   const blob = new Blob([JSON.stringify(merged, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -232,6 +402,7 @@ reloadJsonBtn.onclick = async function () {
   document.getElementById("status").innerText = "Reloaded";
 };
 
+// ---------- RENDER ----------
 let currentFilter = "all";
 
 document.querySelectorAll(".filter-btn").forEach(btn => {
@@ -251,28 +422,44 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+function statusBadge(offer) {
+  const st = offer.filled || offer.status === "closed" ? "closed"
+    : (offer.status === "accepted" || (offer.accepts && offer.accepts.length)) ? "accepted"
+    : "open";
+  const label = st === "closed" ? "CLOSED" : st === "accepted" ? "ACCEPTED" : "OPEN";
+  return '<span class="status-badge status-' + st + '">' + label + '</span>';
+}
+
 async function renderOffers() {
   updateMarketMids();
   const listEl = document.getElementById("offersList");
-  let offers = allOffers().filter(o => !o.filled);
+  let offers = allOffers().filter(o => {
+    if (currentFilter === "sell" || currentFilter === "buy") return o.type === currentFilter;
+    return true;
+  });
 
-  if (currentFilter !== "all") {
-    offers = offers.filter(o => o.type === currentFilter);
-  }
+  offers.sort((a, b) => {
+    const ac = (a.filled || a.status === "closed") ? 1 : 0;
+    const bc = (b.filled || b.status === "closed") ? 1 : 0;
+    return ac - bc;
+  });
 
   if (offers.length === 0) {
-    listEl.innerHTML = '<p class="muted">No open offers yet. Be the first!</p>';
+    listEl.innerHTML = '<p class="muted">No offers yet. Be the first!</p>';
     return;
   }
 
   listEl.innerHTML = "";
+  const me = (walletAddress || "").toLowerCase();
 
   for (const o of offers) {
     const card = document.createElement("div");
     card.className = "offer-card " + o.type;
-
     const typeLabel = o.type === "sell" ? "SELL" : "BUY";
     const typeColor = o.type === "sell" ? "#16a34a" : "#2563eb";
+    const isPoster = me && o.poster.toLowerCase() === me;
+    const isClosed = o.filled || o.status === "closed";
+    const alreadyAccepted = (o.accepts || []).some(a => a.address.toLowerCase() === me);
 
     let balanceHtml = "";
     if (o.type === "sell" && contract) {
@@ -290,83 +477,120 @@ async function renderOffers() {
     const etherscan = "https://etherscan.io/address/" + o.poster;
     const time = new Date(o.createdAt).toLocaleString();
     const mintLink = o.mintTx
-      ? ' · <a href="https://etherscan.io/tx/' + o.mintTx + '" target="_blank" rel="noopener">mint tx</a>'
+      ? ' · <a href="https://etherscan.io/tx/' + o.mintTx + '" target="_blank" rel="noopener">list mint</a>'
+      : "";
+    const closeLink = o.closeTx
+      ? ' · <a href="https://etherscan.io/tx/' + o.closeTx + '" target="_blank" rel="noopener">close mint</a>'
       : "";
     const isPending = pendingOffers.some(p => p.id === o.id);
+    const rep = getRepLine(o.poster);
+
+    let acceptsHtml = "";
+    if (o.accepts && o.accepts.length) {
+      acceptsHtml = '<div class="accept-list"><strong>Accepts (on-chain):</strong><br>' +
+        o.accepts.map(a => {
+          const as = a.address.slice(0, 6) + "…" + a.address.slice(-4);
+          const tx = a.mintTx
+            ? ' <a href="https://etherscan.io/tx/' + a.mintTx + '" target="_blank" rel="noopener">mint</a>'
+            : "";
+          const flag = isPoster && !isClosed
+            ? ' <button class="small-btn danger abandon-btn" data-id="' + o.id + '" data-addr="' + a.address + '">Flag no-pay</button>'
+            : "";
+          return as + tx + flag + ' <span class="muted">' + getRepLine(a.address) + '</span>';
+        }).join("<br>") +
+        "</div>";
+    }
+
+    const signedPreview = o.signedMessage
+      ? '<button class="small-btn toggle-msg-btn" data-id="' + o.id + '">Show signed message</button>' +
+        '<div class="signed-msg" id="msg-' + o.id + '">' + escapeHtml(o.signedMessage) +
+        (o.signature ? "\n\nSignature:\n" + escapeHtml(o.signature) : "") +
+        "</div>"
+      : "";
+
+    let actions = '<button class="small-btn copy-btn" data-id="' + o.id + '">Copy text</button>';
+    if (!isClosed && me && !isPoster && !alreadyAccepted) {
+      actions += '<button class="small-btn accept-btn" data-id="' + o.id + '" style="background:#2563eb">Accept (mint 1 SOS)</button>';
+    }
+    if (!isClosed && isPoster) {
+      actions += '<button class="small-btn close-btn" data-id="' + o.id + '" style="background:#16a34a">Close deal (mint 1 SOS)</button>';
+    }
+    if (o.signature) {
+      actions += '<button class="small-btn verify-btn" data-id="' + o.id + '">Verify sig</button>';
+    }
 
     card.innerHTML =
       '<div class="offer-header">' +
         '<span class="offer-type" style="background:' + typeColor + '">' + typeLabel + '</span>' +
         '<span class="offer-amount">' + o.amount + ' SOS</span>' +
+        statusBadge(o) +
         (o.signature ? '<span class="signed-badge">Signed</span>' : '') +
         (isPending ? '<span class="pending-badge">Pending commit</span>' : '') +
       '</div>' +
       '<div class="offer-price">' + escapeHtml(o.price) + '</div>' +
       '<div class="offer-method">via <strong>' + escapeHtml(o.method) + '</strong></div>' +
       balanceHtml +
-      '<div class="offer-contact">Contact: ' + escapeHtml(o.contact) + '</div>' +
+      '<div class="offer-contact">Contact: ' + escapeHtml(o.contact) + ' <span class="muted">(negotiate here first)</span></div>' +
       (o.note ? '<div class="offer-note">' + escapeHtml(o.note) + '</div>' : '') +
+      (rep ? '<div class="rep-line">' + escapeHtml(rep) + '</div>' : '') +
+      acceptsHtml +
       '<div class="offer-meta">' +
         '<a href="' + etherscan + '" target="_blank" rel="noopener">' + shortAddr + '</a>' +
-        ' · ' + time + mintLink +
+        ' · ' + time + mintLink + closeLink +
       '</div>' +
-      '<div class="offer-actions">' +
-        '<button class="small-btn copy-btn" data-id="' + o.id + '">Copy text</button>' +
-        (o.poster.toLowerCase() === (walletAddress || "").toLowerCase()
-          ? '<button class="small-btn danger fill-btn" data-id="' + o.id + '">Mark filled</button>'
-          : '') +
-        (o.signature
-          ? '<button class="small-btn verify-btn" data-id="' + o.id + '">Verify sig</button>'
-          : '') +
-      '</div>';
+      signedPreview +
+      '<div class="offer-actions">' + actions + '</div>';
+
     listEl.appendChild(card);
   }
 
   listEl.querySelectorAll(".copy-btn").forEach(btn => {
     btn.onclick = () => copyOfferText(btn.dataset.id);
   });
-  listEl.querySelectorAll(".fill-btn").forEach(btn => {
-    btn.onclick = () => markFilled(btn.dataset.id);
+  listEl.querySelectorAll(".accept-btn").forEach(btn => {
+    btn.onclick = () => acceptOffer(btn.dataset.id);
+  });
+  listEl.querySelectorAll(".close-btn").forEach(btn => {
+    btn.onclick = () => closeOffer(btn.dataset.id);
+  });
+  listEl.querySelectorAll(".abandon-btn").forEach(btn => {
+    btn.onclick = () => markAbandon(btn.dataset.id, btn.dataset.addr);
   });
   listEl.querySelectorAll(".verify-btn").forEach(btn => {
     btn.onclick = () => verifySignature(btn.dataset.id);
   });
+  listEl.querySelectorAll(".toggle-msg-btn").forEach(btn => {
+    btn.onclick = () => {
+      const el = document.getElementById("msg-" + btn.dataset.id);
+      if (!el) return;
+      el.classList.toggle("show");
+      btn.textContent = el.classList.contains("show") ? "Hide signed message" : "Show signed message";
+    };
+  });
 }
 
 function copyOfferText(id) {
-  const offer = allOffers().find(o => o.id === id);
+  const offer = findOffer(id);
   if (!offer) return;
   const text =
     "SOS69069 " + offer.type.toUpperCase() + " offer\n" +
+    "Id: " + offer.id + "\n" +
     offer.amount + " SOS for: " + offer.price + "\n" +
     "Method: " + offer.method + "\n" +
     "Contact: " + offer.contact + "\n" +
     (offer.note ? "Note: " + offer.note + "\n" : "") +
     "Poster: " + offer.poster + "\n" +
+    "Status: " + (offer.status || "open") + "\n" +
     "Etherscan: https://etherscan.io/address/" + offer.poster + "\n" +
-    (offer.mintTx ? "Mint tx: https://etherscan.io/tx/" + offer.mintTx + "\n" : "") +
-    (offer.signature ? "(Signed offer)\n" : "");
+    (offer.mintTx ? "List mint: https://etherscan.io/tx/" + offer.mintTx + "\n" : "") +
+    (offer.signedMessage ? "\n--- signed message ---\n" + offer.signedMessage + "\n" : "");
   navigator.clipboard.writeText(text).then(() => {
     document.getElementById("status").innerText = "Offer text copied";
   });
 }
 
-function markFilled(id) {
-  pendingOffers = loadPending();
-  const pIdx = pendingOffers.findIndex(o => o.id === id);
-  if (pIdx !== -1) {
-    pendingOffers[pIdx].filled = true;
-    savePending(pendingOffers);
-  }
-  const cIdx = communityOffers.findIndex(o => o.id === id);
-  if (cIdx !== -1) communityOffers[cIdx].filled = true;
-  renderOffers();
-  document.getElementById("status").innerText =
-    "Marked filled locally. Download offers.json and commit to update the public list.";
-}
-
 async function verifySignature(id) {
-  const offer = allOffers().find(o => o.id === id);
+  const offer = findOffer(id);
   if (!offer || !offer.signature || !offer.signedMessage) {
     alert("No signature on this offer");
     return;
@@ -374,7 +598,7 @@ async function verifySignature(id) {
   try {
     const recovered = ethers.verifyMessage(offer.signedMessage, offer.signature);
     if (recovered.toLowerCase() === offer.poster.toLowerCase()) {
-      alert("✅ Signature valid\nRecovered address matches the poster.\n\nThis only proves the wallet authored the text — it does not lock tokens or create a trade.");
+      alert("✅ Signature valid\nRecovered address matches the poster.\n\nOpen “Show signed message” on the card or read signedMessage in offers.json.");
     } else {
       alert("❌ Signature does NOT match the poster address!");
     }
@@ -383,8 +607,7 @@ async function verifySignature(id) {
   }
 }
 
-
-// ---------- MARKET MID PRICES ----------
+// ---------- MARKET MID ----------
 async function fetchEthUsd() {
   try {
     const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
@@ -397,32 +620,22 @@ async function fetchEthUsd() {
   }
 }
 
-/**
- * Try to extract a price in USDC per 1 SOS from free-text.
- * Accepts: "5 USDC", "5$", "$5", "5 USD", "5 USDT", "0.002 ETH", "0.002 eth / sos", etc.
- * Returns USDC number or null.
- */
 function parsePriceToUsdc(priceText, amountSos) {
   if (!priceText) return null;
   const t = String(priceText).trim();
   const amt = Math.max(1, Number(amountSos) || 1);
-
-  // ETH patterns
   let m = t.match(/([\d.,]+)\s*(ETH|eth|Ξ)/);
   if (m && ethUsdPrice) {
     const eth = parseFloat(m[1].replace(",", "."));
     if (!isNaN(eth) && eth > 0) return (eth * ethUsdPrice) / amt;
   }
-
-  // USDC / USD / USDT / $ patterns
   m = t.match(/(?:USDC|USD|USDT|\$)\s*([\d.,]+)/i) ||
       t.match(/([\d.,]+)\s*(?:USDC|USD|USDT|\$|bucks|dollars)/i) ||
-      t.match(/^([\d.,]+)$/); // bare number treated as USDC
+      t.match(/^([\d.,]+)$/);
   if (m) {
     const usd = parseFloat(m[1].replace(",", "."));
     if (!isNaN(usd) && usd > 0) return usd / amt;
   }
-
   return null;
 }
 
@@ -435,9 +648,7 @@ function median(nums) {
 
 function formatEthUsdc(usdcPerSos) {
   if (usdcPerSos == null || isNaN(usdcPerSos)) return "—";
-  const usdcStr = usdcPerSos >= 1
-    ? usdcPerSos.toFixed(2)
-    : usdcPerSos.toPrecision(3);
+  const usdcStr = usdcPerSos >= 1 ? usdcPerSos.toFixed(2) : usdcPerSos.toPrecision(3);
   if (ethUsdPrice && ethUsdPrice > 0) {
     const eth = usdcPerSos / ethUsdPrice;
     const ethStr = eth >= 0.001 ? eth.toFixed(5) : eth.toExponential(2);
@@ -447,37 +658,31 @@ function formatEthUsdc(usdcPerSos) {
 }
 
 function updateMarketMids() {
-  const offers = allOffers().filter(o => !o.filled);
-  const sellUsdc = []; // asks — price to BUY from sellers
-  const buyUsdc = [];  // bids — price you can SELL into
-
+  const offers = allOffers().filter(o => !o.filled && o.status !== "closed");
+  const sellUsdc = [];
+  const buyUsdc = [];
   for (const o of offers) {
     const p = parsePriceToUsdc(o.price, o.amount);
     if (p == null) continue;
     if (o.type === "sell") sellUsdc.push(p);
     else if (o.type === "buy") buyUsdc.push(p);
   }
-
-  const midAsk = median(sellUsdc); // middle price to buy SOS
-  const midBid = median(buyUsdc);  // middle price to sell SOS
-
+  const midAsk = median(sellUsdc);
+  const midBid = median(buyUsdc);
   const elBuy = document.getElementById("midBuy");
   const elSell = document.getElementById("midSell");
   const elMeta = document.getElementById("midMeta");
   if (!elBuy) return;
-
   elBuy.innerText = formatEthUsdc(midAsk);
   elSell.innerText = formatEthUsdc(midBid);
-
   const parts = [];
-  if (sellUsdc.length) parts.push(sellUsdc.length + " sell offer" + (sellUsdc.length > 1 ? "s" : ""));
-  if (buyUsdc.length) parts.push(buyUsdc.length + " buy offer" + (buyUsdc.length > 1 ? "s" : ""));
+  if (sellUsdc.length) parts.push(sellUsdc.length + " sell");
+  if (buyUsdc.length) parts.push(buyUsdc.length + " buy");
   if (ethUsdPrice) parts.push("ETH ≈ $" + ethUsdPrice.toFixed(0));
   elMeta.innerText = parts.length
     ? "Based on " + parts.join(" · ")
-    : "No USDC/ETH-priced offers yet — add prices like “5 USDC” or “0.002 ETH”";
+    : "No USDC/ETH-priced offers yet — use prices like “5 USDC” or “0.002 ETH”";
 }
-
 
 (async function init() {
   pendingOffers = loadPending();
