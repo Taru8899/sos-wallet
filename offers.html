@@ -171,19 +171,8 @@
 </div>
 
 <div class="card">
-  <h2>offers.json</h2>
-  <p class="muted small">
-    GitHub Pages <strong>cannot write files</strong>. Offers live in your browser first (Pending commit).<br>
-    1) <strong>Copy</strong> or <strong>Download</strong> (button turns <strong>blue</strong> when there is data)<br>
-    2) Paste/upload into repo <code>offers.json</code><br>
-    3) Commit + push<br>
-    4) <strong>Reload</strong> after Pages updates
-  </p>
-  <button id="downloadJsonBtn" class="secondary">Download current offers.json</button>
-  <button id="copyJsonBtn" class="secondary">Copy offers JSON</button>
-  <button id="reloadJsonBtn" class="secondary">Reload from offers.json</button>
-  <p class="muted small" id="exportMeta">0 offers ready to export</p>
-  <textarea id="jsonPreview" rows="10" placeholder="Offers JSON appears here after Copy / Download"></textarea>
+  <h2>Sync</h2>
+  <p class="muted small" id="exportMeta">Connecting to live offer feed…</p>
 </div>
 
 <div class="card">
@@ -208,6 +197,49 @@
   import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.min.js";
   window.ethers = ethers;
 </script>
+
+<!-- Firebase Realtime Database bridge: exposes window.SOSDB for offers.js (a classic script) to call -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getDatabase, ref, get, set, update, onValue
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAwX5jMN6EECEr3n7NpJ60fMrDUwZro8ss",
+    authDomain: "sos69069-145e0.firebaseapp.com",
+    databaseURL: "https://sos69069-145e0-default-rtdb.firebaseio.com",
+    projectId: "sos69069-145e0",
+    storageBucket: "sos69069-145e0.firebasestorage.app",
+    messagingSenderId: "462397970850",
+    appId: "1:462397970850:web:0ceaed4410771a6361bafb"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getDatabase(fbApp);
+  const offersRef = ref(db, "offers");
+
+  window.SOSDB = {
+    // One-time load: returns an array of offers (converts the {id: offer} object to an array)
+    async loadOffers() {
+      const snap = await get(offersRef);
+      const val = snap.val() || {};
+      return Object.values(val);
+    },
+    // Write/overwrite a single offer by id
+    async saveOffer(offer) {
+      await set(ref(db, "offers/" + offer.id), offer);
+    },
+    // Live subscription: callback fires with a fresh array whenever the database changes
+    watchOffers(callback) {
+      onValue(offersRef, (snap) => {
+        const val = snap.val() || {};
+        callback(Object.values(val));
+      });
+    }
+  };
+</script>
+
 <script src="contract.js"></script>
 <script src="offers.js"></script>
 </body>
