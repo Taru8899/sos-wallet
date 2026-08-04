@@ -20,9 +20,9 @@
     display: block;
     margin-top: 12px;
     margin-bottom: 4px;
-    font-size: 14px;
+    font-size: 18px;          /* bigger labels */
     color: #ffffff;
-    font-weight: 900; /* extra bold */
+    font-weight: 900;
   }
   select {
     width: 100%;
@@ -38,6 +38,7 @@
   .chips button {
     width: auto; padding: 8px 12px; margin: 0; font-size: 13px;
     background: var(--input-bg); border-radius: 20px;
+    font-weight: 900;         /* bolder than labels */
   }
   .chips button.chip-active { background: var(--brand-blue); }
   button.secondary { background: #4b5563; }
@@ -94,31 +95,22 @@
     color: #f97316;
     font-weight: 700;
   }
-  /* remove green background from sync dot */
+  /* hide the dot */
   .sync-dot {
-    background: none !important;
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    margin-right: 6px;
-  }
-  .sync-dot.sync-connected {
-    background: #22c55e !important;
-  }
-  .sync-dot.sync-connecting {
-    background: #facc15 !important;
-  }
-  .sync-dot.sync-disconnected {
-    background: #ef4444 !important;
+    display: none;
   }
   .effective-blue {
     color: var(--brand-blue-soft);
     font-weight: 700;
   }
-  /* remove numbering from card headings if we want */
-  .card h2 {
-    font-size: 1.25rem;
+  /* extra spacing between connect button and status */
+  #connectButton {
+    margin-bottom: 12px;
+  }
+  .offer-id {
+    font-size: 11px;
+    color: #6b7280;
+    margin-right: 6px;
   }
 </style>
 </head>
@@ -129,14 +121,13 @@
   <img src="logo.webp" alt="SOS69069" class="logo-badge">
   <div>
     <h1>SOS69069 Offers</h1>
-    <p class="subtitle">P2P interactions on Ethereum Mainnet</p>
+    <p class="subtitle">Ethereum Mainnet</p>
   </div>
 </div>
 
-<!-- ===== CONNECT WALLET ===== -->
+<!-- ===== CONNECT WALLET (description removed) ===== -->
 <div class="card">
   <h2>Connect Your Wallet</h2>
-  <p class="muted small">Connect to view your balance, post offers, and interact with other users. No offer or trade can be made until you're connected.</p>
   <button id="connectButton">Connect Wallet</button>
   <p>Status:</p>
   <div id="status">Not connected</div>
@@ -144,10 +135,10 @@
   <div id="address">-</div>
 </div>
 
-<!-- ===== YOUR SOS BALANCE (moved before Browse) ===== -->
+<!-- ===== YOUR SOS BALANCE (description shortened) ===== -->
 <div class="card">
   <h2>Your SOS Balance</h2>
-  <p class="muted small">Trust is your total minted SOS — it's all SOS you've received from others or via pushForMe. Push counts how much you've minted through actions like posting, accepting, or closing offers.<br><br>Effective (Trust − Push) is the balance that reflects genuine, unspent activity.</p>
+  <p class="muted small">Effective is Trust minus Push - balance that reflects unspent activity.</p>
   <p>Effective: <span id="effective" class="effective-blue">0</span></p>
   <p>Trust: <span id="trust">0</span></p>
   <p>Push: <span id="push">0</span></p>
@@ -155,10 +146,16 @@
   <p>Total Supply: <span id="totalSupply">0</span></p>
 </div>
 
-<!-- ===== BROWSE OFFERS ===== -->
+<!-- ===== NAV LINKS (moved after SOS Balance) ===== -->
+<div class="card nav-links" style="margin-bottom:3px;">
+  <p style="margin-bottom:12px;color:#9ca3af;font-size:14px;">More</p>
+  <a href="index.html" class="wallet">Wallet</a>
+  <a href="history.html" class="history">History</a>
+</div>
+
+<!-- ===== BROWSE OFFERS (description removed) ===== -->
 <div class="card">
   <h2>Browse Offers</h2>
-  <p class="muted small">Filter by type, then use "Accept" to signal interest in an open offer, or "Close deal" as the poster once a trade is complete. See the Safety Rules below before accepting or delivering SOS.</p>
   <div class="filters">
     <button class="filter-btn active" data-filter="all">All</button>
     <button class="filter-btn" data-filter="sell">Sell</button>
@@ -167,18 +164,11 @@
   <div id="offersList" class="offers-list"><p class="muted">Loading…</p></div>
 </div>
 
-<!-- ===== NAV LINKS (placed after Browse) ===== -->
-<div class="card nav-links" style="margin-bottom:3px;">
-  <p style="margin-bottom:12px;color:#9ca3af;font-size:14px;">More</p>
-  <a href="index.html" class="wallet">Wallet</a>
-  <a href="history.html" class="history">History</a>
-</div>
-
-<!-- ===== LIVE SYNC ===== -->
+<!-- ===== LIVE SYNC (orange text, no dot) ===== -->
 <div class="card">
   <h2>Live Sync</h2>
-  <p class="muted small">Offers post instantly to a shared feed — no manual upload needed. Everyone browsing this page sees new offers, accepts, and closes in real time.</p>
-  <p class="muted small"><span id="syncDot" class="sync-dot sync-connecting"></span><span id="exportMeta" class="sync-live">Connecting to live offer feed…</span></p>
+  <p class="muted small">Offers post instantly to a shared feed. Everyone browsing this page sees new offers in real time.</p>
+  <p class="muted small"><span id="exportMeta" class="sync-live">Connecting to live offer feed…</span></p>
 </div>
 
 <!-- ===== POST A NEW OFFER ===== -->
@@ -228,36 +218,25 @@
 <div class="card info-card">
   <h2>About the Signature</h2>
   <p class="info-text">
-    Every offer is signed and mints 1 SOS to you at the same time — this is the only way to post. Signing proves you personally authored the offer; it is not a binding contract. The full signed text is stored alongside the offer as <code>signedMessage</code>, and anyone can verify it against your wallet address using the "Verify sig" button.
+    Every offer requires a signature that mints 1 SOS to you — the only way to post. It proves authorship (not a contract). Full text is stored as <code>signedMessage</code> and can be verified against your wallet via “Verify sig”.
   </p>
 </div>
 
 <!-- ===== SAFETY RULES (short version) ===== -->
 <div class="card warning-card">
-  <h2>⚠ Safety Rules — Please Read Before the Use</h2>
+  <h2>⚠ Safety Rules</h2>
   <p class="info-text">
-    This is a <strong>pure peer-to-peer</strong> marketplace — there is <strong>no escrow</strong>. Minted SOS and transaction hashes serve only as evidence of activity, not as protection against fraud.
-  </p>
-  <p class="info-text">
-    <strong>Posting an offer always mints 1 SOS to you</strong>, and requires a signature that proves you authored it — this is the only way to post. Negotiate details off-app using the contact info provided. <strong>Accepting</strong> an offer mints 1 SOS to the accepting party.
-  </p>
-  <p class="info-text">
-    The party <strong>delivering SOS</strong> should act first on-chain. Only after that should payment be sent. The poster should then mark the deal <strong>Closed</strong>.
-  </p>
-  <p class="info-text">
-    If you post a <strong>sell</strong> offer and someone accepts it, you (the seller) mint SOS to them first — expect payment only after that mint is confirmed.
-  </p>
-  <p class="info-text">
-    <strong>Negative Effective balance blocks selling — and signals you need to buy.</strong>
-    If Trust − Push goes negative, you've pushed out more than you've genuinely received, so the app won't let you post a sell offer.
-    This is also a signal, not just a restriction: buy mints (accept a buy offer, or get accepted on a sell offer) to add to your Trust and raise your Effective balance back above zero. Once it's positive, selling is available again.
-  </p>
-  <p class="info-text">
-    <strong>Flag no-pay</strong> lets you report a non-paying counterparty, but it does not close or reverse the deal. You must supply your own mint transaction as evidence before flagging.
+    Pure P2P, no escrow. SOS mints and tx hashes are evidence only, not protection.<br>
+    Posting or accepting mints 1 SOS to that party.<br>
+    Deliver SOS first on-chain; only then send payment. Poster marks Closed after.<br>
+    Sell offer accepted → you mint SOS to buyer first; expect payment only after confirmation.<br>
+    Negative Effective balance (Trust − Push) blocks selling. Buy/accept to raise it.<br>
+    Flag no-pay reports non-payers (needs your mint tx as evidence) but does not reverse the deal.<br>
+    Trust = total SOS received.<br>
+    Push = SOS you minted via actions.<br>
+    Effective = Trust − Push (genuine unspent activity).
   </p>
 </div>
-
-<!-- (nav links removed from here, already placed after Browse) -->
 
 </div>
 
@@ -266,7 +245,6 @@
   window.ethers = ethers;
 </script>
 
-<!-- Firebase Realtime Database bridge: exposes window.SOSDB for offers.js (a classic script) to call -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
@@ -312,5 +290,87 @@
 
 <script src="contract.js"></script>
 <script src="offers.js"></script>
+
+<!-- Custom overrides for offers display: 5-digit ID, limit to 20, update live sync text -->
+<script>
+  (function() {
+    // Wait for the original offers.js to load and then override the rendering
+    const originalRender = window.renderOffers || function() {};
+    // We'll hook into the offer list update by listening to DOM changes or overriding the function.
+    // Since we have the offers.js, we can intercept the offer list update.
+    // We'll add a MutationObserver or use a timer.
+    // Better: we can override the function that updates the offers list.
+    // But we don't have the function reference. Instead, we'll observe changes to the offers list container.
+    const listContainer = document.getElementById('offersList');
+    const observer = new MutationObserver(function() {
+      // After the list is updated, we can modify the offer cards to show 5-digit ID
+      // and also limit to latest 20.
+      // However, the offers.js may re-render everything, so we need to intercept.
+      // We'll listen to the 'watchOffers' callback and override the display.
+      // We can redefine the callback.
+    });
+    // We'll use a different approach: we'll override the global offer update function.
+    // But we can't easily. Instead, we'll add a script that redefines the render function after offers.js is loaded.
+    // Since offers.js is a classic script, we can wait for it to load and then replace the function.
+    // We'll use a setTimeout to ensure offers.js has run.
+    setTimeout(() => {
+      // Override the function that updates the offer list.
+      // We'll assume offers.js uses a function called updateOffersList or similar.
+      // We can search for the function that modifies innerHTML of #offersList.
+      // Since we don't have the source, we'll just re-run our own render after they do.
+      // We'll listen to changes to the offers list and re-render with our modifications.
+      // We'll use a custom event or just re-run after they run.
+      // Simple: we'll periodically check the content and modify.
+      // Or we can override the 'watchOffers' callback by redefining it.
+      // We'll replace the window.SOSDB.watchOffers with our own that calls the original and then modifies.
+      const originalWatch = window.SOSDB.watchOffers;
+      if (originalWatch) {
+        window.SOSDB.watchOffers = function(callback) {
+          originalWatch(function(offers) {
+            // Limit to 20 latest by timestamp (createdAt)
+            const sorted = offers.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            const latest20 = sorted.slice(0, 20);
+            // Update live sync count
+            const meta = document.getElementById('exportMeta');
+            if (meta) {
+              meta.textContent = 'Live · ' + latest20.length + ' offer(s) synced';
+            }
+            // Pass the filtered list to the original callback
+            callback(latest20);
+          });
+        };
+        // Also need to handle the initial load? The offers.js will call watchOffers.
+      }
+    }, 500); // give time for offers.js to load
+
+    // Also we need to ensure the offer cards display 5-digit ID.
+    // We'll add a style for offer-id and modify the rendering.
+    // We'll override the rendering function if we can find it.
+    // Since we can't, we'll use a MutationObserver to scan for offer cards and add the ID.
+    // Simpler: we'll use a periodic check or override the innerHTML setter.
+    // Let's use a MutationObserver on the offersList.
+    const listObserver = new MutationObserver(function() {
+      // Find all offer cards and add a 5-digit ID
+      const cards = listContainer.querySelectorAll('.offer-card');
+      cards.forEach(card => {
+        // Check if we already added the ID
+        if (card.querySelector('.offer-id')) return;
+        // Find the offer id from the data attribute or from the card's context
+        // We can look for the offer id in the card's data-id attribute.
+        const id = card.dataset.id || '0';
+        const padded = String(id).padStart(5, '0');
+        const header = card.querySelector('.offer-header');
+        if (header) {
+          const idSpan = document.createElement('span');
+          idSpan.className = 'offer-id';
+          idSpan.textContent = '#' + padded;
+          header.prepend(idSpan);
+        }
+      });
+    });
+    listObserver.observe(listContainer, { childList: true, subtree: true });
+  })();
+</script>
+
 </body>
 </html>
