@@ -179,6 +179,18 @@
   <p>Total Supply: <span id="totalSupply">0</span></p>
 </div>
 
+<!-- ===== SOS MARKET PRICE OVERVIEW (moved here) ===== -->
+<div class="card" id="marketCard">
+  <h2>SOS Market Price Overview</h2>
+  <div class="market-price-line">
+    Buy price (max): <span class="price-value" id="midBuy">—</span>
+  </div>
+  <div class="market-price-line">
+    Sell price (max): <span class="price-value" id="midSell">—</span>
+  </div>
+  <p class="muted small" id="midMeta" style="margin-top:8px;display:none;">No priced offers yet</p>
+</div>
+
 <!-- ===== NAV LINKS ===== -->
 <div class="card nav-links" style="margin-bottom:3px;">
   <a href="index.html" class="wallet">Wallet</a>
@@ -232,18 +244,6 @@
   <label>Note (optional)</label>
   <input id="offerNote" placeholder="Any extra details for potential trading partners">
   <button id="signOfferBtn" disabled>Sign &amp; Post (mint 1 SOS)</button>
-</div>
-
-<!-- ===== MARKET PRICE ===== -->
-<div class="card" id="marketCard">
-  <h2>SOS Market Price Overview</h2>
-  <div class="market-price-line">
-    Buy price (max): <span class="price-value" id="midBuy">—</span>
-  </div>
-  <div class="market-price-line">
-    Sell price (max): <span class="price-value" id="midSell">—</span>
-  </div>
-  <p class="muted small" id="midMeta" style="margin-top:8px;display:none;">No priced offers yet</p>
 </div>
 
 <!-- ===== SAFETY RULES ===== -->
