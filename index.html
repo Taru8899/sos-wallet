@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SOS69069 Wallet</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+
+
+<body>
+
+
+<div class="container">
+
+
+<h1>SOS69069 Wallet</h1>
+
+<p class="subtitle">Ethereum Mainnet</p>
+
+
+<div class="card">
+
+
+<button id="connectButton">
+
+Connect Wallet
+
+</button>
+
+
+<p>Status:</p>
+
+<div id="status">
+
+Disconnected
+
+</div>
+
+
+<p>Wallet:</p>
+
+<div id="address">
+
+-
+
+</div>
+
+
+</div>
+
+
+
+
+<div class="card">
+
+
+<h2>SOS Balance</h2>
+
+
+<p>
+
+Trust:
+<span id="trust">0</span>
+
+</p>
+
+
+<p>
+
+Push:
+<span id="push">0</span>
+
+</p>
+
+
+<p>
+
+Effective:
+<span id="effective">0</span>
+
+</p>
+
+
+<p>
+
+Total Supply:
+<span id="totalSupply">0</span>
+
+</p>
+
+
+</div>
+
+
+
+
+<div class="card">
+
+
+<h2>Mint SOS</h2>
+
+
+<input
+id="receiver"
+placeholder="Receiver address 0x..."
+>
+
+
+<button id="mintButton">
+Push SOS To Address
+</button>
+
+
+<button id="selfMintButton">
+Push SOS To Myself
+</button>
+
+
+<label style="display:block;margin-top:16px;margin-bottom:4px;font-size:14px;color:#9ca3af">Mint several at once</label>
+
+<input
+id="batchMintCount"
+type="number"
+min="1"
+max="50"
+placeholder="e.g. 5"
+>
+
+<button id="batchMintButton">
+Mint N SOS (one confirmation each)
+</button>
+
+<p class="muted small" id="batchMintProgress"></p>
+
+
+</div>
+
+
+<div class="card" style="text-align:center">
+  <p style="margin-bottom:12px;color:#9ca3af;font-size:14px">More</p>
+  <a href="history.html" style="color:#60a5fa;margin:0 16px;text-decoration:none;font-size:20px;font-weight:800">History</a>
+  <a href="offers.html" style="color:#4ade80;margin:0 16px;text-decoration:none;font-size:20px;font-weight:800">Offers</a>
+</div>
+
+
+</div>
+
+
+
+<!-- ethers.js v6 is an ES module — must be loaded with type="module"
+     and imported, then exposed as window.ethers so contract.js/app.js
+     (plain, non-module scripts) can use the global `ethers` object. -->
+<script type="module">
+
+    import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.min.js";
+
+    window.ethers = ethers;
+
+</script>
+
+
+<!-- SOS contract connection -->
+<script src="contract.js?v=4"></script>
+
+
+<!-- UI wiring -->
+<script src="app.js?v=4"></script>
+
+
+</body>
+
+</html>
