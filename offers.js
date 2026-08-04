@@ -1,7 +1,6 @@
 let walletAddress = "";
-const LOCAL_KEY = "sos69069_pending_offers_v1";
+const LOCAL_KEY = "sos69069_pending_offers_v1"; // offline fallback cache only now
 const REP_KEY = "sos69069_rep_v1";
-const OFFERS_JSON_URL = "offers.json";
 
 let communityOffers = [];
 let pendingOffers = [];
@@ -10,9 +9,6 @@ let ethUsdPrice = null;
 const connectButton = document.getElementById("connectButton");
 const postOfferBtn = document.getElementById("postOfferBtn");
 const signOfferBtn = document.getElementById("signOfferBtn");
-const downloadJsonBtn = document.getElementById("downloadJsonBtn");
-const reloadJsonBtn = document.getElementById("reloadJsonBtn");
-const copyJsonBtn = document.getElementById("copyJsonBtn");
 
 postOfferBtn.disabled = true;
 signOfferBtn.disabled = true;
@@ -100,16 +96,21 @@ function getRepLine(address) {
 }
 
 async function fetchCommunityOffers() {
-  const res = await fetch(OFFERS_JSON_URL + "?t=" + Date.now(), { cache: "no-store" });
-  if (!res.ok) throw new Error("HTTP " + res.status + " loading offers.json");
-  const textBody = await res.text();
-  let data;
-  try {
-    data = JSON.parse(textBody);
-  } catch {
-    throw new Error("offers.json is not valid JSON");
-  }
+  if (!window.SOSDB) throw new Error("Firebase not initialized (SOSDB missing)");
+  const data = await window.SOSDB.loadOffers();
   communityOffers = Array.isArray(data) ? data : [];
+}
+
+// Live sync: whenever any user posts/accepts/closes, everyone's list refreshes automatically
+function startLiveSync() {
+  if (!window.SOSDB) return;
+  window.SOSDB.watchOffers((offers) => {
+    communityOffers = Array.isArray(offers) ? offers : [];
+    renderOffers();
+    updateMarketMids();
+    const meta = document.getElementById("exportMeta");
+    if (meta) meta.innerText = "Live · " + communityOffers.length + " offer(s) synced";
+  });
 }
 
 function allOffers() {
@@ -128,34 +129,11 @@ function allOffers() {
   });
 }
 
-function getExportJson() {
-  const merged = allOffers();
-  return {
-    merged,
-    json: JSON.stringify(merged, null, 2)
-  };
-}
-
 function updateExportUI() {
-  const { merged, json } = getExportJson();
+  const merged = allOffers();
   const meta = document.getElementById("exportMeta");
-  const ta = document.getElementById("jsonPreview");
   if (meta) {
-    meta.innerText = merged.length
-      ? merged.length + " offer(s) ready to export (" + json.length + " chars)"
-      : "0 offers ready to export — post an offer first";
-  }
-  if (ta && !ta.dataset.touched) {
-    ta.value = merged.length ? json : "";
-  }
-  if (downloadJsonBtn) {
-    downloadJsonBtn.classList.toggle("has-data", merged.length > 0);
-    downloadJsonBtn.textContent = merged.length
-      ? "Download offers.json (" + merged.length + ")"
-      : "Download current offers.json";
-  }
-  if (copyJsonBtn) {
-    copyJsonBtn.classList.toggle("has-data", merged.length > 0);
+    meta.innerText = "Live · " + merged.length + " offer(s) synced";
   }
 }
 
@@ -168,6 +146,12 @@ function persistOfferUpdate(offer) {
 
   const ci = communityOffers.findIndex(o => o.id === offer.id);
   if (ci !== -1) communityOffers[ci] = offer;
+
+  window.SOSDB.saveOffer(offer).catch(e => {
+    console.error("Firebase update failed", e);
+    document.getElementById("status").innerText =
+      "Saved locally, but sync to server failed (" + e.message + ").";
+  });
 
   updateExportUI();
 }
@@ -293,21 +277,25 @@ async function finishPost(offer, doSign) {
     return;
   }
 
+  // Keep a local cache as an offline fallback, but the source of truth is Firebase now
   pendingOffers = loadPending();
   pendingOffers.unshift(offer);
   savePending(pendingOffers);
 
+  try {
+    await window.SOSDB.saveOffer(offer);
+    document.getElementById("status").innerText =
+      "Offer posted + 1 SOS minted. Live for everyone.";
+  } catch (e) {
+    console.error("Firebase save failed", e);
+    document.getElementById("status").innerText =
+      "Offer minted, but sync to server failed (" + e.message + "). Saved locally only — try again.";
+  }
+
   clearForm();
   await refreshWallet();
   updateExportUI();
-  const ta = document.getElementById("jsonPreview");
-  if (ta) {
-    ta.value = getExportJson().json;
-    ta.dataset.touched = "";
-  }
   renderOffers();
-  document.getElementById("status").innerText =
-    "Offer saved in this browser + 1 SOS minted. Download/Copy JSON (blue button) → paste into GitHub offers.json → commit.";
 }
 
 postOfferBtn.onclick = async function () {
@@ -383,7 +371,7 @@ async function acceptOffer(id) {
   await refreshWallet();
   renderOffers();
   document.getElementById("status").innerText =
-    "Accepted. Export JSON (blue button) and commit so others see the accept.";
+    "Accepted. Synced live for everyone.";
 }
 
 async function closeOffer(id) {
@@ -426,7 +414,7 @@ async function closeOffer(id) {
   await refreshWallet();
   renderOffers();
   document.getElementById("status").innerText =
-    "Closed. Export JSON (blue button) and commit to update the public list.";
+    "Closed. Synced live for everyone.";
 }
 
 function markAbandon(offerId, acceptorAddress) {
@@ -474,104 +462,11 @@ function markAbandon(offerId, acceptorAddress) {
   bumpRep(acceptorAddress, "abandons");
 
   document.getElementById("status").innerText =
-    "Flagged no-pay with evidence (deal still open). Export JSON to publish. Close separately if needed.";
+    "Flagged no-pay with evidence (deal still open). Synced live.";
   renderOffers();
 }
 
-// ---------- EXPORT / IMPORT ----------
-function doDownload() {
-  const { merged, json } = getExportJson();
-  updateExportUI();
-  const ta = document.getElementById("jsonPreview");
-  if (ta) ta.value = json;
 
-  if (!merged.length) {
-    alert(
-      "Nothing to download — 0 offers in browser storage.\n\n" +
-      "If you still see cards on screen, hard-refresh (Ctrl+Shift+R) or check console:\n" +
-      "localStorage.getItem('sos69069_pending_offers_v1')"
-    );
-    document.getElementById("status").innerText = "Download skipped — 0 offers";
-    return;
-  }
-
-  const blob = new Blob([json], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "offers.json";
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(json).catch(() => {});
-  }
-
-  document.getElementById("status").innerText =
-    "Downloaded offers.json (" + merged.length + " offers, " + json.length +
-    " chars). Upload this file to the repo root as offers.json and commit.";
-  console.log("export offers", merged.length, merged);
-}
-
-downloadJsonBtn.onclick = function () {
-  try {
-    doDownload();
-  } catch (e) {
-    console.error(e);
-    document.getElementById("status").innerText = "Download failed: " + e.message;
-    alert("Download failed: " + e.message);
-  }
-};
-
-if (copyJsonBtn) {
-  copyJsonBtn.onclick = function () {
-    const { merged, json } = getExportJson();
-    const ta = document.getElementById("jsonPreview");
-    if (ta) {
-      ta.value = json;
-      ta.dataset.touched = "1";
-      ta.focus();
-      ta.select();
-    }
-    updateExportUI();
-    if (!merged.length) {
-      alert("0 offers to copy. Post an offer first.");
-      return;
-    }
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(json).then(() => {
-        document.getElementById("status").innerText =
-          "Copied " + merged.length + " offers. Paste into GitHub offers.json → Commit.";
-      }).catch(() => {
-        document.getElementById("status").innerText =
-          "Select the textarea and copy manually (Ctrl+C).";
-      });
-    } else {
-      document.getElementById("status").innerText = "Select textarea and press Ctrl+C";
-    }
-  };
-}
-
-reloadJsonBtn.onclick = async function () {
-  document.getElementById("status").innerText = "Reloading offers.json…";
-  try {
-    await fetchCommunityOffers();
-    pendingOffers = loadPending();
-    await renderOffers();
-    updateExportUI();
-    const total = allOffers().length;
-    const server = communityOffers.length;
-    document.getElementById("status").innerText =
-      "Reloaded: " + server + " on server, " + pendingOffers.length +
-      " pending locally, " + total + " merged. Server file stays empty until you commit a download.";
-  } catch (e) {
-    console.error(e);
-    document.getElementById("status").innerText = "Reload failed: " + e.message;
-  }
-};
 
 // ---------- RENDER ----------
 let currentFilter = "all";
@@ -618,7 +513,7 @@ async function renderOffers() {
   });
 
   if (offers.length === 0) {
-    listEl.innerHTML = '<p class="muted">No offers yet. Post one, then Download/Copy JSON to GitHub.</p>';
+    listEl.innerHTML = '<p class="muted">No offers yet. Post one to get started.</p>';
     return;
   }
 
@@ -716,7 +611,7 @@ async function renderOffers() {
         '<span class="offer-amount">' + o.amount + ' SOS</span>' +
         statusBadge(o) +
         (o.signature ? '<span class="signed-badge">Signed</span>' : '') +
-        (isPending ? '<span class="pending-badge">Pending commit</span>' : '') +
+        (isPending ? '<span class="pending-badge">Syncing…</span>' : '') +
       '</div>' +
       '<div class="offer-price">' + escapeHtml(o.price) + '</div>' +
       '<div class="offer-method">via <strong>' + escapeHtml(o.method) + '</strong></div>' +
@@ -886,6 +781,7 @@ function updateMarketMids() {
       communityOffers = [];
     }
     try { await fetchEthUsd(); } catch (e) { console.warn(e); }
+    startLiveSync();
     updateExportUI();
     await renderOffers();
   } catch (e) {
