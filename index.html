@@ -1,0 +1,36 @@
+<div class="card">
+
+<h2>Mint SOS</h2>
+
+<label style="display:block;margin-bottom:4px;font-size:14px;color:#9ca3af">
+Address to send SOS to
+</label>
+
+<input
+id="receiver"
+placeholder="0x... (creator address pre-filled)"
+>
+
+<label style="display:block;margin-top:16px;margin-bottom:4px;font-size:14px;color:#9ca3af">
+How many
+</label>
+
+<input
+id="mintCount"
+type="number"
+min="1"
+max="50"
+value="1"
+>
+
+<button id="mintButton" disabled>
+Push SOS To Address
+</button>
+
+<p class="muted small" style="margin-top:8px">
+Mint 1 SOS or several at once (one confirmation each)
+</p>
+
+<p class="muted small" id="mintProgress"></p>
+
+</div>
