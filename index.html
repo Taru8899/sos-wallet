@@ -108,37 +108,38 @@ Total Supply:
 <h2>Mint SOS</h2>
 
 
+<label style="display:block;margin-bottom:4px;font-size:14px;color:#9ca3af">
+Address (leave blank to mint to yourself)
+</label>
+
 <input
 id="receiver"
-placeholder="Receiver address 0x..."
+placeholder="0x... or leave blank for yourself"
 >
 
 
-<button id="mintButton">
-Push SOS To Address
-</button>
-
-
-<button id="selfMintButton">
-Push SOS To Myself
-</button>
-
-
-<label style="display:block;margin-top:16px;margin-bottom:4px;font-size:14px;color:#9ca3af">Mint several at once</label>
+<label style="display:block;margin-top:16px;margin-bottom:4px;font-size:14px;color:#9ca3af">
+How many
+</label>
 
 <input
-id="batchMintCount"
+id="mintCount"
 type="number"
 min="1"
 max="50"
-placeholder="e.g. 5"
+value="1"
 >
 
-<button id="batchMintButton">
-Mint N SOS (one confirmation each)
+
+<button id="mintButton" disabled>
+Push SOS To Address
 </button>
 
-<p class="muted small" id="batchMintProgress"></p>
+<p class="muted small" style="margin-top:8px">
+Mint 1 or several at once, one confirmation each
+</p>
+
+<p class="muted small" id="mintProgress"></p>
 
 
 </div>
@@ -168,11 +169,11 @@ Mint N SOS (one confirmation each)
 
 
 <!-- SOS contract connection -->
-<script src="contract.js?v=4"></script>
+<script src="contract.js?v=5"></script>
 
 
 <!-- UI wiring -->
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 
 
 </body>
