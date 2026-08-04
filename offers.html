@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOS69069 · Offers</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .nav-links { text-align: center; }
+  .nav-links a {
+    color: #60a5fa;
+    margin: 0 16px;
+    text-decoration: none;
+    font-size: 20px;
+    font-weight: 800;
+  }
+  .nav-links a.wallet { color: #facc15; }
+  .nav-links a.history { color: #60a5fa; }
+  label {
+    display: block;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    font-size: 14px;
+    color: #9ca3af;
+  }
+  select {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: #374151;
+    color: white;
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+  .chips button {
+    width: auto; padding: 8px 12px; margin: 0; font-size: 13px;
+    background: #374151; border-radius: 20px;
+  }
+  .chips button.chip-active { background: #2563eb; }
+  button.secondary { background: #4b5563; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  #downloadJsonBtn.has-data,
+  #copyJsonBtn.has-data { background: #2563eb !important; }
+  .warning-card h2 { color: #facc15; }
+  .info-card h2 { color: #60a5fa; }
+  .rules { margin-left: 18px; font-size: 14px; line-height: 1.55; color: #d1d5db; }
+  .rules li { margin-bottom: 6px; }
+  .info-text { font-size: 14px; line-height: 1.5; color: #d1d5db; margin-bottom: 10px; }
+  .muted { color: #9ca3af; font-size: 14px; }
+  .small { font-size: 13px; margin-bottom: 10px; }
+  .filters { display: flex; gap: 8px; margin-bottom: 14px; }
+  .filter-btn { width: auto; padding: 8px 14px; margin: 0; font-size: 14px; background: #374151; }
+  .filter-btn.active { background: #2563eb; }
+  .offers-list { max-height: 70vh; overflow: auto; }
+  .offer-card {
+    background: #111827; border: 1px solid #374151; border-radius: 12px;
+    padding: 14px; margin-bottom: 12px;
+  }
+  .offer-card.sell { border-left: 4px solid #16a34a; }
+  .offer-card.buy { border-left: 4px solid #2563eb; }
+  .offer-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .offer-type { font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; color: white; }
+  .offer-amount { font-size: 18px; font-weight: bold; }
+  .signed-badge { font-size: 11px; background: #7c3aed; padding: 2px 7px; border-radius: 6px; }
+  .pending-badge { font-size: 11px; background: #ca8a04; padding: 2px 7px; border-radius: 6px; }
+  .offer-price { font-size: 16px; margin-bottom: 4px; color: #facc15; }
+  .offer-method, .offer-contact, .offer-note, .offer-balance { font-size: 14px; margin-top: 4px; color: #d1d5db; }
+  .offer-meta { font-size: 12px; color: #9ca3af; margin-top: 8px; }
+  .offer-meta a { color: #60a5fa; }
+  .offer-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .small-btn { width: auto; padding: 8px 12px; margin: 0; font-size: 13px; background: #374151; }
+  .small-btn.danger { background: #b91c1c; }
+  .status-badge { font-size: 11px; padding: 2px 7px; border-radius: 6px; font-weight: bold; }
+  .status-open { background: #374151; color: #e5e7eb; }
+  .status-accepted { background: #1d4ed8; color: white; }
+  .status-closed { background: #15803d; color: white; }
+  .signed-msg {
+    margin-top: 8px; padding: 10px; background: #0f172a; border-radius: 8px;
+    font-size: 12px; color: #9ca3af; white-space: pre-wrap; word-break: break-all; display: none;
+  }
+  .signed-msg.show { display: block; }
+  .accept-list { font-size: 13px; color: #d1d5db; margin-top: 6px; }
+  .rep-line { font-size: 13px; color: #a3e635; margin-top: 4px; }
+  code { background: #374151; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  #jsonPreview {
+    width: 100%; margin-top: 12px; background: #111827; color: #e5e7eb;
+    border: 1px solid #374151; border-radius: 10px; padding: 10px;
+    font-size: 12px; font-family: monospace; box-sizing: border-box;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>SOS69069 Offers</h1>
+<p class="subtitle">P2P interactions on Ethereum Mainnet</p>
+
+<div class="card">
+  <h2>1. Connect Your Wallet</h2>
+  <p class="muted small">Connect to view your balance, post offers, and interact with other users. No offer or trade can be made until you're connected.</p>
+  <button id="connectButton">Connect Wallet</button>
+  <p>Status:</p>
+  <div id="status">Not connected</div>
+  <p>Wallet address:</p>
+  <div id="address">-</div>
+</div>
+
+<div class="card">
+  <h2>Your SOS Balance</h2>
+  <p class="muted small">Trust is your total minted SOS — it's all SOS you've received from others or via pushForMe. Push counts how much you've minted through actions like posting, accepting, or closing offers.<br><br>Effective (Trust − Push) is the balance that reflects genuine, unspent activity.</p>
+  <p>Effective: <span id="effective">0</span></p>
+  <p>Trust: <span id="trust">0</span></p>
+  <p>Push: <span id="push">0</span></p>
+  <p class="muted small" id="effectiveHint" style="display:none;color:#fca5a5"></p>
+  <p>Total Supply: <span id="totalSupply">0</span></p>
+</div>
+
+<div class="card" id="marketCard">
+  <h2>Market Price Overview</h2>
+  <p class="muted small">Calculated per 1 SOS from active sell/buy offers priced in USDC, USD, USDT, or ETH. Each offer's price is normalized by its amount first, so offers of different sizes are compared fairly.</p>
+  <p>Buy — highest price offered: <span id="midBuy">—</span></p>
+  <p class="muted small" id="midBuyRange">Range: —</p>
+  <p>Sell — highest price offered: <span id="midSell">—</span></p>
+  <p class="muted small" id="midSellRange">Range: —</p>
+  <p class="muted small" id="midMeta">No priced offers yet</p>
+</div>
+
+<div class="card warning-card">
+  <h2>⚠ Safety Rules — Please Read Before the Use</h2>
+  <ul class="rules">
+    <li>This is a <strong>pure peer-to-peer</strong> marketplace — there is <strong>no escrow</strong>. Minted SOS and transaction hashes serve only as evidence of activity, not as protection against fraud.</li>
+    <li><strong>Posting an offer always mints 1 SOS to you</strong>, and requires a signature that proves you authored it — this is the only way to post. Negotiate details off-app using the contact info provided. <strong>Accepting</strong> an offer mints 1 SOS to the accepting party.</li>
+    <li>The party <strong>delivering SOS</strong> should act first on-chain. Only after that should payment be sent. The poster should then mark the deal <strong>Closed</strong>.</li>
+    <li>If you post a <strong>sell</strong> offer and someone accepts it, you (the seller) mint SOS to them first — expect payment only after that mint is confirmed.</li>
+    <li>
+      <strong>Negative Effective balance blocks selling — and signals you need to buy.</strong>
+      If Trust − Push goes negative, you've pushed out more than you've genuinely received, so the app won't let you post a sell offer.
+      This is also a signal, not just a restriction: buy mints (accept a buy offer, or get accepted on a sell offer) to add to your Trust and raise your Effective balance back above zero. Once it's positive, selling is available again.
+    </li>
+    <li><strong>Flag no-pay</strong> lets you report a non-paying counterparty, but it does not close or reverse the deal. You must supply your own mint transaction as evidence before flagging.</li>
+  </ul>
+</div>
+
+<div class="card info-card">
+  <h2>About the Signature</h2>
+  <p class="info-text">
+    Every offer is signed and mints 1 SOS to you at the same time — this is the only way to post. Signing proves you personally authored the offer; it is not a binding contract. The full signed text is stored alongside the offer as <code>signedMessage</code>, and anyone can verify it against your wallet address using the "Verify sig" button.
+  </p>
+</div>
+
+<div class="card">
+  <h2>2. Post a New Offer</h2>
+  <p class="muted small">Posting signs the offer to prove authorship and mints 1 SOS to your wallet, then publishes it live for everyone. Fill in the details below and select Sign &amp; Post.</p>
+  <label>Type</label>
+  <select id="offerType">
+    <option value="sell">Sell SOS (I have mints to offer)</option>
+    <option value="buy">Buy SOS (I want to receive mints)</option>
+  </select>
+  <label>Amount of SOS</label>
+  <input id="offerAmount" type="number" min="1" step="1" placeholder="e.g. 1">
+  <label>What you want / offer in return</label>
+  <input id="offerPrice" placeholder="e.g. 0.01 ETH, 5 USDC, or Chupa Chups">
+  <label>Payment / exchange method</label>
+  <div class="chips" id="methodChips">
+    <button type="button" data-method="ETH">ETH</button>
+    <button type="button" data-method="USDT">USDT</button>
+    <button type="button" data-method="BTC">BTC</button>
+    <button type="button" data-method="Fiat">Fiat</button>
+    <button type="button" data-method="Cash">Cash</button>
+    <button type="button" data-method="Goods">Goods</button>
+    <button type="button" data-method="Services">Services</button>
+    <button type="button" data-method="Other">Other</button>
+  </div>
+  <input id="offerMethod" placeholder="Tap a method above or type your own">
+  <label>Contact (Telegram / X / Discord / email)</label>
+  <input id="offerContact" placeholder="@username or email">
+  <label>Note (optional)</label>
+  <input id="offerNote" placeholder="Any extra details for potential trading partners">
+  <button id="signOfferBtn" disabled>Sign &amp; Post (mint 1 SOS)</button>
+</div>
+
+<div class="card">
+  <h2>3. Live Sync</h2>
+  <p class="muted small">Offers post instantly to a shared feed — no manual upload needed. Everyone browsing this page sees new offers, accepts, and closes in real time.</p>
+  <p class="muted small"><span id="syncDot" class="sync-dot sync-connecting"></span><span id="exportMeta">Connecting to live offer feed…</span></p>
+</div>
+
+<div class="card">
+  <h2>4. Browse Offers</h2>
+  <p class="muted small">Filter by type, then use "Accept" to signal interest in an open offer, or "Close deal" as the poster once a trade is complete. See the Safety Rules above before accepting or delivering SOS.</p>
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="sell">Sell</button>
+    <button class="filter-btn" data-filter="buy">Buy</button>
+  </div>
+  <div id="offersList" class="offers-list"><p class="muted">Loading…</p></div>
+</div>
+
+<div class="card nav-links">
+  <p style="margin-bottom:12px;color:#9ca3af;font-size:14px">More</p>
+  <a href="index.html" class="wallet">Wallet</a>
+  <a href="history.html" class="history">History</a>
+</div>
+
+</div>
+
+<script type="module">
+  import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.min.js";
+  window.ethers = ethers;
+</script>
+
+<!-- Firebase Realtime Database bridge: exposes window.SOSDB for offers.js (a classic script) to call -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getDatabase, ref, get, set, update, onValue
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAwX5jMN6EECEr3n7NpJ60fMrDUwZro8ss",
+    authDomain: "sos69069-145e0.firebaseapp.com",
+    databaseURL: "https://sos69069-145e0-default-rtdb.firebaseio.com",
+    projectId: "sos69069-145e0",
+    storageBucket: "sos69069-145e0.firebasestorage.app",
+    messagingSenderId: "462397970850",
+    appId: "1:462397970850:web:0ceaed4410771a6361bafb"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getDatabase(fbApp);
+  const offersRef = ref(db, "offers");
+
+  window.SOSDB = {
+    // One-time load: returns an array of offers (converts the {id: offer} object to an array)
+    async loadOffers() {
+      const snap = await get(offersRef);
+      const val = snap.val() || {};
+      return Object.values(val);
+    },
+    // Write/overwrite a single offer by id
+    async saveOffer(offer) {
+      await set(ref(db, "offers/" + offer.id), offer);
+    },
+    // Live subscription: callback fires with a fresh array whenever the database changes
+    watchOffers(callback) {
+      onValue(offersRef, (snap) => {
+        const val = snap.val() || {};
+        callback(Object.values(val));
+      });
+    },
+    // Live subscription to actual connection state (Firebase's special local-only path)
+    watchConnection(callback) {
+      onValue(ref(db, ".info/connected"), (snap) => {
+        callback(snap.val() === true);
+      });
+    }
+  };
+</script>
+
+<script src="contract.js"></script>
+<script src="offers.js"></script>
+</body>
+</html>
