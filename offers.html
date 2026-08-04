@@ -20,7 +20,7 @@
     display: block;
     margin-top: 12px;
     margin-bottom: 4px;
-    font-size: 18px;          /* bigger labels */
+    font-size: 18px;
     color: #ffffff;
     font-weight: 900;
   }
@@ -36,9 +36,9 @@
   }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
   .chips button {
-    width: auto; padding: 8px 12px; margin: 0; font-size: 13px;
+    width: auto; padding: 10px 16px; margin: 0; font-size: 16px;
     background: var(--input-bg); border-radius: 20px;
-    font-weight: 900;         /* bolder than labels */
+    font-weight: 900;
   }
   .chips button.chip-active { background: var(--brand-blue); }
   button.secondary { background: #4b5563; }
@@ -95,7 +95,6 @@
     color: #f97316;
     font-weight: 700;
   }
-  /* hide the dot */
   .sync-dot {
     display: none;
   }
@@ -103,14 +102,18 @@
     color: var(--brand-blue-soft);
     font-weight: 700;
   }
-  /* extra spacing between connect button and status */
   #connectButton {
     margin-bottom: 12px;
   }
   .offer-id {
-    font-size: 11px;
+    font-size: 13px;
     color: #6b7280;
-    margin-right: 6px;
+    margin-right: 8px;
+    font-weight: 700;
+  }
+  .post-desc-bold {
+    font-weight: 700;
+    color: #e5e7eb;
   }
 </style>
 </head>
@@ -125,9 +128,8 @@
   </div>
 </div>
 
-<!-- ===== CONNECT WALLET (description removed) ===== -->
+<!-- ===== CONNECT WALLET (heading removed) ===== -->
 <div class="card">
-  <h2>Connect Your Wallet</h2>
   <button id="connectButton">Connect Wallet</button>
   <p>Status:</p>
   <div id="status">Not connected</div>
@@ -135,10 +137,10 @@
   <div id="address">-</div>
 </div>
 
-<!-- ===== YOUR SOS BALANCE (description shortened) ===== -->
+<!-- ===== YOUR SOS BALANCE ===== -->
 <div class="card">
   <h2>Your SOS Balance</h2>
-  <p class="muted small">Effective is Trust minus Push - balance that reflects unspent activity.</p>
+  <p class="muted small">Effective - balance that reflects unspent activity.</p>
   <p>Effective: <span id="effective" class="effective-blue">0</span></p>
   <p>Trust: <span id="trust">0</span></p>
   <p>Push: <span id="push">0</span></p>
@@ -146,14 +148,13 @@
   <p>Total Supply: <span id="totalSupply">0</span></p>
 </div>
 
-<!-- ===== NAV LINKS (moved after SOS Balance) ===== -->
+<!-- ===== NAV LINKS (no "More" text) ===== -->
 <div class="card nav-links" style="margin-bottom:3px;">
-  <p style="margin-bottom:12px;color:#9ca3af;font-size:14px;">More</p>
   <a href="index.html" class="wallet">Wallet</a>
   <a href="history.html" class="history">History</a>
 </div>
 
-<!-- ===== BROWSE OFFERS (description removed) ===== -->
+<!-- ===== BROWSE OFFERS ===== -->
 <div class="card">
   <h2>Browse Offers</h2>
   <div class="filters">
@@ -164,17 +165,17 @@
   <div id="offersList" class="offers-list"><p class="muted">Loading…</p></div>
 </div>
 
-<!-- ===== LIVE SYNC (orange text, no dot) ===== -->
+<!-- ===== LIVE SYNC ===== -->
 <div class="card">
   <h2>Live Sync</h2>
   <p class="muted small">Offers post instantly to a shared feed. Everyone browsing this page sees new offers in real time.</p>
-  <p class="muted small"><span id="exportMeta" class="sync-live">Connecting to live offer feed…</span></p>
+  <p><span id="exportMeta" class="sync-live">Connecting to live offer feed…</span></p>
 </div>
 
 <!-- ===== POST A NEW OFFER ===== -->
 <div class="card">
   <h2>Post a New Offer</h2>
-  <p class="muted small">Posting signs the offer to prove authorship and mints 1 SOS to your wallet, then publishes it live for everyone. Fill in the details below and select Sign &amp; Post.</p>
+  <p class="muted small post-desc-bold">Posting signs the offer to prove authorship and mints 1 SOS to your wallet, then publishes it live for everyone. Fill in the details below and select Sign &amp; Post.</p>
   <label>Type</label>
   <select id="offerType">
     <option value="sell">Sell SOS (I have mints to offer)</option>
@@ -214,7 +215,7 @@
   <p class="muted small" id="midMeta">No priced offers yet</p>
 </div>
 
-<!-- ===== ABOUT SIGNATURE (short version) ===== -->
+<!-- ===== ABOUT SIGNATURE ===== -->
 <div class="card info-card">
   <h2>About the Signature</h2>
   <p class="info-text">
@@ -222,7 +223,7 @@
   </p>
 </div>
 
-<!-- ===== SAFETY RULES (short version) ===== -->
+<!-- ===== SAFETY RULES ===== -->
 <div class="card warning-card">
   <h2>⚠ Safety Rules</h2>
   <p class="info-text">
@@ -291,79 +292,42 @@
 <script src="contract.js"></script>
 <script src="offers.js"></script>
 
-<!-- Custom overrides for offers display: 5-digit ID, limit to 20, update live sync text -->
 <script>
   (function() {
-    // Wait for the original offers.js to load and then override the rendering
-    const originalRender = window.renderOffers || function() {};
-    // We'll hook into the offer list update by listening to DOM changes or overriding the function.
-    // Since we have the offers.js, we can intercept the offer list update.
-    // We'll add a MutationObserver or use a timer.
-    // Better: we can override the function that updates the offers list.
-    // But we don't have the function reference. Instead, we'll observe changes to the offers list container.
-    const listContainer = document.getElementById('offersList');
-    const observer = new MutationObserver(function() {
-      // After the list is updated, we can modify the offer cards to show 5-digit ID
-      // and also limit to latest 20.
-      // However, the offers.js may re-render everything, so we need to intercept.
-      // We'll listen to the 'watchOffers' callback and override the display.
-      // We can redefine the callback.
-    });
-    // We'll use a different approach: we'll override the global offer update function.
-    // But we can't easily. Instead, we'll add a script that redefines the render function after offers.js is loaded.
-    // Since offers.js is a classic script, we can wait for it to load and then replace the function.
-    // We'll use a setTimeout to ensure offers.js has run.
-    setTimeout(() => {
-      // Override the function that updates the offer list.
-      // We'll assume offers.js uses a function called updateOffersList or similar.
-      // We can search for the function that modifies innerHTML of #offersList.
-      // Since we don't have the source, we'll just re-run our own render after they do.
-      // We'll listen to changes to the offers list and re-render with our modifications.
-      // We'll use a custom event or just re-run after they run.
-      // Simple: we'll periodically check the content and modify.
-      // Or we can override the 'watchOffers' callback by redefining it.
-      // We'll replace the window.SOSDB.watchOffers with our own that calls the original and then modifies.
-      const originalWatch = window.SOSDB.watchOffers;
-      if (originalWatch) {
-        window.SOSDB.watchOffers = function(callback) {
-          originalWatch(function(offers) {
-            // Limit to 20 latest by timestamp (createdAt)
-            const sorted = offers.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            const latest20 = sorted.slice(0, 20);
-            // Update live sync count
-            const meta = document.getElementById('exportMeta');
-            if (meta) {
-              meta.textContent = 'Live · ' + latest20.length + ' offer(s) synced';
-            }
-            // Pass the filtered list to the original callback
-            callback(latest20);
-          });
-        };
-        // Also need to handle the initial load? The offers.js will call watchOffers.
-      }
-    }, 500); // give time for offers.js to load
+    // Override watchOffers to limit to 20 and add sequential numbering
+    const originalWatch = window.SOSDB.watchOffers;
+    if (originalWatch) {
+      window.SOSDB.watchOffers = function(callback) {
+        originalWatch(function(offers) {
+          // Sort by createdAt descending (newest first)
+          const sorted = offers.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          // Keep only latest 20
+          const latest20 = sorted.slice(0, 20);
+          // Update live sync count (orange text)
+          const meta = document.getElementById('exportMeta');
+          if (meta) {
+            meta.textContent = 'Live · ' + latest20.length + ' offer(s) synced';
+          }
+          // Pass the filtered list to the original callback
+          callback(latest20);
+        });
+      };
+    }
 
-    // Also we need to ensure the offer cards display 5-digit ID.
-    // We'll add a style for offer-id and modify the rendering.
-    // We'll override the rendering function if we can find it.
-    // Since we can't, we'll use a MutationObserver to scan for offer cards and add the ID.
-    // Simpler: we'll use a periodic check or override the innerHTML setter.
-    // Let's use a MutationObserver on the offersList.
+    // MutationObserver to add sequential numbers (#00000, #00001, ...)
+    const listContainer = document.getElementById('offersList');
     const listObserver = new MutationObserver(function() {
-      // Find all offer cards and add a 5-digit ID
       const cards = listContainer.querySelectorAll('.offer-card');
-      cards.forEach(card => {
+      cards.forEach((card, index) => {
         // Check if we already added the ID
         if (card.querySelector('.offer-id')) return;
-        // Find the offer id from the data attribute or from the card's context
-        // We can look for the offer id in the card's data-id attribute.
-        const id = card.dataset.id || '0';
-        const padded = String(id).padStart(5, '0');
+        // Format number as 5-digit with leading zeros
+        const num = String(index).padStart(5, '0');
         const header = card.querySelector('.offer-header');
         if (header) {
           const idSpan = document.createElement('span');
           idSpan.className = 'offer-id';
-          idSpan.textContent = '#' + padded;
+          idSpan.textContent = '#' + num;
           header.prepend(idSpan);
         }
       });
