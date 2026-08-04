@@ -742,11 +742,13 @@ function parsePriceToUsdc(priceText, amountSos) {
   return null;
 }
 
-function median(nums) {
+function maxOf(nums) {
   if (!nums.length) return null;
-  const a = nums.slice().sort((x, y) => x - y);
-  const mid = Math.floor(a.length / 2);
-  return a.length % 2 ? a[mid] : (a[mid - 1] + a[mid]) / 2;
+  return Math.max(...nums);
+}
+function minOf(nums) {
+  if (!nums.length) return null;
+  return Math.min(...nums);
 }
 
 function formatEthUsdc(usdcPerSos) {
@@ -755,7 +757,7 @@ function formatEthUsdc(usdcPerSos) {
   if (ethUsdPrice && ethUsdPrice > 0) {
     const eth = usdcPerSos / ethUsdPrice;
     const ethStr = eth >= 0.001 ? eth.toFixed(5) : eth.toExponential(2);
-    return ethStr + " ETH (" + usdcStr + " USDC)";
+    return usdcStr + " USDC (" + ethStr + " ETH)";
   }
   return usdcStr + " USDC";
 }
@@ -770,20 +772,32 @@ function updateMarketMids() {
     if (o.type === "sell") sellUsdc.push(p);
     else if (o.type === "buy") buyUsdc.push(p);
   }
-  const midAsk = median(sellUsdc);
-  const midBid = median(buyUsdc);
+  const midAsk = maxOf(sellUsdc);
+  const midBid = maxOf(buyUsdc);
   const elBuy = document.getElementById("midBuy");
   const elSell = document.getElementById("midSell");
+  const elBuyRange = document.getElementById("midBuyRange");
+  const elSellRange = document.getElementById("midSellRange");
   const elMeta = document.getElementById("midMeta");
   if (!elBuy) return;
   elBuy.innerText = formatEthUsdc(midAsk);
   elSell.innerText = formatEthUsdc(midBid);
+  if (elBuyRange) {
+    elBuyRange.innerText = buyUsdc.length
+      ? "Range: " + formatEthUsdc(minOf(buyUsdc)) + " to " + formatEthUsdc(maxOf(buyUsdc))
+      : "No priced buy offers yet";
+  }
+  if (elSellRange) {
+    elSellRange.innerText = sellUsdc.length
+      ? "Range: " + formatEthUsdc(minOf(sellUsdc)) + " to " + formatEthUsdc(maxOf(sellUsdc))
+      : "No priced sell offers yet";
+  }
   const parts = [];
   if (sellUsdc.length) parts.push(sellUsdc.length + " sell");
   if (buyUsdc.length) parts.push(buyUsdc.length + " buy");
   if (ethUsdPrice) parts.push("ETH ≈ $" + ethUsdPrice.toFixed(0));
   elMeta.innerText = parts.length
-    ? "Based on " + parts.join(" · ")
+    ? "Highest price currently offered, per 1 SOS · based on " + parts.join(" · ")
     : "No USDC/ETH-priced offers yet — use prices like “5 USDC” or “0.002 ETH”";
 }
 
