@@ -140,7 +140,6 @@
 <!-- ===== YOUR SOS BALANCE ===== -->
 <div class="card">
   <h2>Your SOS Balance</h2>
-  <p class="muted small">Effective - balance that reflects unspent activity.</p>
   <p>Effective: <span id="effective" class="effective-blue">0</span></p>
   <p>Trust: <span id="trust">0</span></p>
   <p>Push: <span id="push">0</span></p>
@@ -148,7 +147,7 @@
   <p>Total Supply: <span id="totalSupply">0</span></p>
 </div>
 
-<!-- ===== NAV LINKS (no "More" text) ===== -->
+<!-- ===== NAV LINKS  ===== -->
 <div class="card nav-links" style="margin-bottom:3px;">
   <a href="index.html" class="wallet">Wallet</a>
   <a href="history.html" class="history">History</a>
@@ -227,15 +226,14 @@
 <div class="card warning-card">
   <h2>⚠ Safety Rules</h2>
   <p class="info-text">
-    Pure P2P, no escrow. SOS mints and tx hashes are evidence only, not protection.<br>
-    Posting or accepting mints 1 SOS to that party.<br>
-    Deliver SOS first on-chain; only then send payment. Poster marks Closed after.<br>
+    <br>
     Sell offer accepted → you mint SOS to buyer first; expect payment only after confirmation.<br>
-    Negative Effective balance (Trust − Push) blocks selling. Buy/accept to raise it.<br>
+    Negative Effective balance (Trust − Push) blocks selling. Buy more SOS to raise it.<br>
     Flag no-pay reports non-payers (needs your mint tx as evidence) but does not reverse the deal.<br>
+    
+    Effective = Trust − Push (genuine unspent activity)
     Trust = total SOS received.<br>
     Push = SOS you minted via actions.<br>
-    Effective = Trust − Push (genuine unspent activity).
   </p>
 </div>
 
