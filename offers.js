@@ -32,10 +32,21 @@ async function refreshWallet() {
   const trust = await getTrust(walletAddress);
   const push = await getPushCount(walletAddress);
   const total = await getTotalSupply();
+  const effective = BigInt(trust) - BigInt(push);
   document.getElementById("trust").innerText = trust.toString();
   document.getElementById("push").innerText = push.toString();
-  document.getElementById("effective").innerText = (BigInt(trust) - BigInt(push)).toString();
+  document.getElementById("effective").innerText = effective.toString();
   document.getElementById("totalSupply").innerText = total.toString();
+
+  const hint = document.getElementById("effectiveHint");
+  if (hint) {
+    if (effective <= 0n) {
+      hint.innerText = "Your Effective balance is " + effective + " — selling is blocked. Buy mints to raise it above zero.";
+      hint.style.display = "block";
+    } else {
+      hint.style.display = "none";
+    }
+  }
 }
 
 document.getElementById("methodChips").addEventListener("click", (e) => {
@@ -248,6 +259,20 @@ async function finishPost(offer, doSign) {
       const trust = await getTrust(walletAddress);
       const push = await getPushCount(walletAddress);
       const effective = BigInt(trust) - BigInt(push);
+
+      if (effective <= 0n) {
+        alert(
+          "You can't post a sell offer right now.\n\n" +
+          "Your Effective balance is " + effective + ". Effective (Trust − Push) reflects your real, unspent activity — " +
+          "when it's negative, you've pushed out more than you've genuinely received, so there's nothing left to sell.\n\n" +
+          "This isn't just a block — it's a signal: you need to buy mints first. Accepting a buy offer (or having a sell offer accepted from you) adds to your Trust, " +
+          "which raises your Effective balance back up. Once it's positive again, you'll be able to post sell offers."
+        );
+        document.getElementById("status").innerText =
+          "Sell blocked — Effective balance is " + effective + ". Buy mints first to raise it above zero.";
+        return;
+      }
+
       if (effective < BigInt(offer.amount)) {
         const ok = confirm(
           "Your effective balance is only " + effective + ". You are listing " + offer.amount + " SOS.\nContinue anyway?"
