@@ -108,9 +108,26 @@ function startLiveSync() {
     communityOffers = Array.isArray(offers) ? offers : [];
     renderOffers();
     updateMarketMids();
-    const meta = document.getElementById("exportMeta");
-    if (meta) meta.innerText = "Live · " + communityOffers.length + " offer(s) synced";
+    updateSyncStatus(true, communityOffers.length);
   });
+  if (window.SOSDB.watchConnection) {
+    window.SOSDB.watchConnection((connected) => {
+      updateSyncStatus(connected, communityOffers.length);
+    });
+  }
+}
+
+function updateSyncStatus(connected, count) {
+  const dot = document.getElementById("syncDot");
+  const meta = document.getElementById("exportMeta");
+  if (dot) {
+    dot.className = "sync-dot " + (connected ? "sync-live" : "sync-offline");
+  }
+  if (meta) {
+    meta.innerText = connected
+      ? "Live · " + count + " offer(s) synced"
+      : "Offline — reconnecting…";
+  }
 }
 
 function allOffers() {
