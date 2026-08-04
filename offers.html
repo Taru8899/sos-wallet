@@ -172,7 +172,7 @@
 
 <div class="card">
   <h2>Sync</h2>
-  <p class="muted small" id="exportMeta">Connecting to live offer feed…</p>
+  <p class="muted small"><span id="syncDot" class="sync-dot sync-connecting"></span><span id="exportMeta">Connecting to live offer feed…</span></p>
 </div>
 
 <div class="card">
@@ -235,6 +235,12 @@
       onValue(offersRef, (snap) => {
         const val = snap.val() || {};
         callback(Object.values(val));
+      });
+    },
+    // Live subscription to actual connection state (Firebase's special local-only path)
+    watchConnection(callback) {
+      onValue(ref(db, ".info/connected"), (snap) => {
+        callback(snap.val() === true);
       });
     }
   };
