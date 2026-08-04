@@ -113,6 +113,7 @@
   <p>Trust: <span id="trust">0</span></p>
   <p>Push: <span id="push">0</span></p>
   <p>Effective: <span id="effective">0</span></p>
+  <p class="muted small" id="effectiveHint" style="display:none;color:#fca5a5"></p>
   <p>Total Supply: <span id="totalSupply">0</span></p>
 </div>
 
@@ -133,6 +134,11 @@
     <li><strong>Posting an offer always mints 1 SOS to you</strong>, and requires a signature that proves you authored it — this is the only way to post. Negotiate details off-app using the contact info provided. <strong>Accepting</strong> an offer mints 1 SOS to the accepting party.</li>
     <li>The party <strong>delivering SOS</strong> should act first on-chain. Only after that should payment be sent. The poster should then mark the deal <strong>Closed</strong>.</li>
     <li>If you post a <strong>sell</strong> offer and someone accepts it, you (the seller) mint SOS to them first — expect payment only after that mint is confirmed.</li>
+    <li>
+      <strong>Negative Effective balance blocks selling — and signals you need to buy.</strong>
+      If Trust − Push goes negative, you've pushed out more than you've genuinely received, so the app won't let you post a sell offer.
+      This is also a signal, not just a restriction: buy mints (accept a buy offer, or get accepted on a sell offer) to add to your Trust and raise your Effective balance back above zero. Once it's positive, selling is available again.
+    </li>
     <li><strong>Flag no-pay</strong> lets you report a non-paying counterparty, but it does not close or reverse the deal. You must supply your own mint transaction as evidence before flagging.</li>
   </ul>
 </div>
