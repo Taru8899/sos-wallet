@@ -95,18 +95,21 @@
 <div class="container">
 
 <h1>SOS69069 Offers</h1>
-<p class="subtitle">P2P Marketplace · Ethereum Mainnet</p>
+<p class="subtitle">Peer-to-peer marketplace on Ethereum Mainnet</p>
 
 <div class="card">
+  <h2>1. Connect Your Wallet</h2>
+  <p class="muted small">Connect to view your balance, post offers, and interact with other users. No offer or trade can be made until you're connected.</p>
   <button id="connectButton">Connect Wallet</button>
   <p>Status:</p>
-  <div id="status">Disconnected</div>
-  <p>Wallet:</p>
+  <div id="status">Not connected</div>
+  <p>Wallet address:</p>
   <div id="address">-</div>
 </div>
 
 <div class="card">
   <h2>Your SOS Balance</h2>
+  <p class="muted small">Trust is your total minted SOS. Push counts how much you've minted through actions like posting, accepting, or closing offers. Effective (Trust − Push) is the balance that reflects genuine, unspent activity.</p>
   <p>Trust: <span id="trust">0</span></p>
   <p>Push: <span id="push">0</span></p>
   <p>Effective: <span id="effective">0</span></p>
@@ -114,42 +117,45 @@
 </div>
 
 <div class="card" id="marketCard">
-  <h2>Market mid (from offers)</h2>
-  <p class="muted small">Parsed from sell/buy offers priced in USDC, USD, USDT or ETH.</p>
-  <p>Buy SOS at (mid ask): <span id="midBuy">—</span></p>
-  <p>Sell SOS at (mid bid): <span id="midSell">—</span></p>
+  <h2>Market Price Overview</h2>
+  <p class="muted small">Calculated per 1 SOS from active sell/buy offers priced in USDC, USD, USDT, or ETH. Each offer's price is normalized by its amount first, so offers of different sizes are compared fairly.</p>
+  <p>Buy — highest price offered: <span id="midBuy">—</span></p>
+  <p class="muted small" id="midBuyRange">Range: —</p>
+  <p>Sell — highest price offered: <span id="midSell">—</span></p>
+  <p class="muted small" id="midSellRange">Range: —</p>
   <p class="muted small" id="midMeta">No priced offers yet</p>
 </div>
 
 <div class="card warning-card">
-  <h2>⚠ Safety Rules</h2>
+  <h2>⚠ Safety Rules — Please Read Before Trading</h2>
   <ul class="rules">
-    <li>Pure P2P — <strong>no real escrow</strong>. SOS mints / tx hashes are evidence only.</li>
-    <li><strong>Post</strong> → mint 1 SOS. <strong>Negotiate</strong> off-app. <strong>Accept</strong> → other party <code>pushForMe</code>.</li>
-    <li><strong>SOS-deliverer acts first</strong> on-chain, then payment, then poster <strong>Closes</strong>.</li>
-    <li><strong>Flag no-pay</strong> needs evidence txs; does not close the deal.</li>
+    <li>This is a <strong>pure peer-to-peer</strong> marketplace — there is <strong>no escrow</strong>. Minted SOS and transaction hashes serve only as evidence of activity, not as protection against fraud.</li>
+    <li><strong>Posting</strong> an offer mints 1 SOS to you. Negotiate details off-app using the contact info provided. <strong>Accepting</strong> an offer mints 1 SOS to the accepting party.</li>
+    <li>The party <strong>delivering SOS</strong> should act first on-chain. Only after that should payment be sent. The poster should then mark the deal <strong>Closed</strong>.</li>
+    <li>If you post a <strong>sell</strong> offer and someone accepts it, you (the seller) mint SOS to them first — expect payment only after that mint is confirmed.</li>
+    <li><strong>Flag no-pay</strong> lets you report a non-paying counterparty, but it does not close or reverse the deal. You must supply your own mint transaction as evidence before flagging.</li>
   </ul>
 </div>
 
 <div class="card info-card">
-  <h2>About optional signature</h2>
+  <h2>About the Optional Signature</h2>
   <p class="info-text">
-    Sign &amp; Post proves authorship only. Full text is stored as <code>signedMessage</code> in offers.json.
+    Signing proves you personally authored this offer — it is not a binding contract. The full signed text is stored alongside the offer as <code>signedMessage</code>, and anyone can verify it against your wallet address using the "Verify sig" button.
   </p>
 </div>
 
 <div class="card">
-  <h2>Post New Offer</h2>
-  <p class="muted small">Mints 1 SOS. Offer stays in this browser until you export JSON to GitHub.</p>
+  <h2>2. Post a New Offer</h2>
+  <p class="muted small">Posting mints 1 SOS to your wallet and publishes the offer live for everyone to see. Fill in the details below, then choose to post as-is or sign it first to prove authorship.</p>
   <label>Type</label>
   <select id="offerType">
-    <option value="sell">Sell SOS (I have mints)</option>
-    <option value="buy">Buy SOS (I want mints)</option>
+    <option value="sell">Sell SOS (I have mints to offer)</option>
+    <option value="buy">Buy SOS (I want to receive mints)</option>
   </select>
   <label>Amount of SOS</label>
   <input id="offerAmount" type="number" min="1" step="1" placeholder="e.g. 1">
   <label>What you want / offer in return</label>
-  <input id="offerPrice" placeholder="e.g. 0.01 ETH or 5 USDC or Chupa Chups">
+  <input id="offerPrice" placeholder="e.g. 0.01 ETH, 5 USDC, or Chupa Chups">
   <label>Payment / exchange method</label>
   <div class="chips" id="methodChips">
     <button type="button" data-method="ETH">ETH</button>
@@ -161,22 +167,24 @@
     <button type="button" data-method="Services">Services</button>
     <button type="button" data-method="Other">Other</button>
   </div>
-  <input id="offerMethod" placeholder="Selected or free text…">
+  <input id="offerMethod" placeholder="Tap a method above or type your own">
   <label>Contact (Telegram / X / Discord / email)</label>
   <input id="offerContact" placeholder="@username or email">
   <label>Note (optional)</label>
-  <input id="offerNote" placeholder="Any extra details">
+  <input id="offerNote" placeholder="Any extra details for potential trading partners">
   <button id="signOfferBtn" disabled>Sign &amp; Post (mint 1 SOS)</button>
   <button id="postOfferBtn" class="secondary" disabled>Post Offer (mint 1 SOS)</button>
 </div>
 
 <div class="card">
-  <h2>Sync</h2>
+  <h2>3. Live Sync</h2>
+  <p class="muted small">Offers post instantly to a shared feed — no manual upload needed. Everyone browsing this page sees new offers, accepts, and closes in real time.</p>
   <p class="muted small"><span id="syncDot" class="sync-dot sync-connecting"></span><span id="exportMeta">Connecting to live offer feed…</span></p>
 </div>
 
 <div class="card">
-  <h2>Browse Offers</h2>
+  <h2>4. Browse Offers</h2>
+  <p class="muted small">Filter by type, then use "Accept" to signal interest in an open offer, or "Close deal" as the poster once a trade is complete. See the Safety Rules above before accepting or delivering SOS.</p>
   <div class="filters">
     <button class="filter-btn active" data-filter="all">All</button>
     <button class="filter-btn" data-filter="sell">Sell</button>
