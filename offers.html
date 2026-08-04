@@ -115,6 +115,27 @@
     font-weight: 700;
     color: #e5e7eb;
   }
+  .status-section {
+    margin-top: 8px;
+  }
+  .status-section p {
+    margin: 4px 0;
+  }
+  .wallet-address {
+    margin-top: 4px;
+  }
+  .market-price-line {
+    font-size: 16px;
+    color: #d1d5db;
+    margin: 6px 0;
+  }
+  .market-price-line strong {
+    color: #ffffff;
+  }
+  .market-price-line .price-value {
+    color: #facc15;
+    font-weight: 700;
+  }
 </style>
 </head>
 <body>
@@ -128,18 +149,23 @@
   </div>
 </div>
 
-<!-- ===== CONNECT WALLET (heading removed) ===== -->
+<!-- ===== CONNECT WALLET ===== -->
 <div class="card">
   <button id="connectButton">Connect Wallet</button>
-  <p>Status:</p>
-  <div id="status">Not connected</div>
-  <p>Wallet address:</p>
-  <div id="address">-</div>
+  <div class="status-section">
+    <p>Status:</p>
+    <div id="status">Not connected</div>
+  </div>
+  <div class="status-section wallet-address">
+    <p>Wallet address:</p>
+    <div id="address">-</div>
+  </div>
 </div>
 
 <!-- ===== YOUR SOS BALANCE ===== -->
 <div class="card">
   <h2>Your SOS Balance</h2>
+  <p class="muted small">Effective - balance that reflects unspent activity.</p>
   <p>Effective: <span id="effective" class="effective-blue">0</span></p>
   <p>Trust: <span id="trust">0</span></p>
   <p>Push: <span id="push">0</span></p>
@@ -147,7 +173,7 @@
   <p>Total Supply: <span id="totalSupply">0</span></p>
 </div>
 
-<!-- ===== NAV LINKS  ===== -->
+<!-- ===== NAV LINKS ===== -->
 <div class="card nav-links" style="margin-bottom:3px;">
   <a href="index.html" class="wallet">Wallet</a>
   <a href="history.html" class="history">History</a>
@@ -171,10 +197,9 @@
   <p><span id="exportMeta" class="sync-live">Connecting to live offer feed…</span></p>
 </div>
 
-<!-- ===== POST A NEW OFFER ===== -->
+<!-- ===== POST A NEW OFFER (description removed) ===== -->
 <div class="card">
   <h2>Post a New Offer</h2>
-  <p class="muted small post-desc-bold">Posting signs the offer to prove authorship and mints 1 SOS to your wallet, then publishes it live for everyone. Fill in the details below and select Sign &amp; Post.</p>
   <label>Type</label>
   <select id="offerType">
     <option value="sell">Sell SOS (I have mints to offer)</option>
@@ -203,37 +228,31 @@
   <button id="signOfferBtn" disabled>Sign &amp; Post (mint 1 SOS)</button>
 </div>
 
-<!-- ===== MARKET PRICE ===== -->
+<!-- ===== MARKET PRICE (description removed) ===== -->
 <div class="card" id="marketCard">
   <h2>Market Price Overview</h2>
-  <p class="muted small">Calculated per 1 SOS from active sell/buy offers priced in USDC, USD, USDT, or ETH. Each offer's price is normalized by its amount first, so offers of different sizes are compared fairly.</p>
-  <p>Buy — highest price offered: <span id="midBuy">—</span></p>
-  <p class="muted small" id="midBuyRange">Range: —</p>
-  <p>Sell — highest price offered: <span id="midSell">—</span></p>
-  <p class="muted small" id="midSellRange">Range: —</p>
-  <p class="muted small" id="midMeta">No priced offers yet</p>
-</div>
-
-<!-- ===== ABOUT SIGNATURE ===== -->
-<div class="card info-card">
-  <h2>About the Signature</h2>
-  <p class="info-text">
-    Every offer requires a signature that mints 1 SOS to you — the only way to post. It proves authorship (not a contract). Full text is stored as <code>signedMessage</code> and can be verified against your wallet via “Verify sig”.
-  </p>
+  <div class="market-price-line">
+    Buy price (max): <span class="price-value" id="midBuy">—</span>
+  </div>
+  <div class="market-price-line">
+    Sell price (max): <span class="price-value" id="midSell">—</span>
+  </div>
+  <p class="muted small" id="midMeta" style="margin-top:8px;">No priced offers yet</p>
 </div>
 
 <!-- ===== SAFETY RULES ===== -->
 <div class="card warning-card">
   <h2>⚠ Safety Rules</h2>
   <p class="info-text">
-    <br>
+    Pure P2P, no escrow. SOS mints and tx hashes are evidence only, not protection.<br>
+    Posting or accepting mints 1 SOS to that party.<br>
+    Deliver SOS first on-chain; only then send payment. Poster marks Closed after.<br>
     Sell offer accepted → you mint SOS to buyer first; expect payment only after confirmation.<br>
-    Negative Effective balance (Trust − Push) blocks selling. Buy more SOS to raise it.<br>
+    Negative Effective balance (Trust − Push) blocks selling. Buy/accept to raise it.<br>
     Flag no-pay reports non-payers (needs your mint tx as evidence) but does not reverse the deal.<br>
-    
-    Effective = Trust − Push (genuine unspent activity)
     Trust = total SOS received.<br>
     Push = SOS you minted via actions.<br>
+    Effective = Trust − Push (genuine unspent activity).
   </p>
 </div>
 
