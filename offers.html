@@ -49,10 +49,10 @@
   .info-card h2 { color: var(--brand-blue-soft); }
   .rules { margin-left: 18px; font-size: 14px; line-height: 1.55; color: #d1d5db; }
   .rules li { margin-bottom: 6px; }
-  .info-text { font-size: 14px; line-height: 1.5; color: #d1d5db; margin-bottom: 10px; }
+  .info-text { font-size: 14px; line-height: 1.6; color: #d1d5db; margin-bottom: 6px; }
   .muted { color: #9ca3af; font-size: 14px; }
   .small { font-size: 13px; margin-bottom: 10px; }
-  .filters { display: flex; gap: 8px; margin-bottom: 14px; }
+  .filters { display: flex; gap: 8px; margin-top: 12px; margin-bottom: 14px; }
   .filter-btn { width: auto; padding: 8px 14px; margin: 0; font-size: 14px; background: var(--input-bg); }
   .filter-btn.active { background: var(--brand-blue); }
   .offers-list { max-height: 70vh; overflow: auto; }
@@ -111,10 +111,6 @@
     margin-right: 8px;
     font-weight: 700;
   }
-  .post-desc-bold {
-    font-weight: 700;
-    color: #e5e7eb;
-  }
   .status-section {
     margin-top: 8px;
   }
@@ -122,19 +118,30 @@
     margin: 4px 0;
   }
   .wallet-address {
-    margin-top: 4px;
+    margin-top: 8px;
   }
   .market-price-line {
     font-size: 16px;
     color: #d1d5db;
     margin: 6px 0;
   }
-  .market-price-line strong {
-    color: #ffffff;
-  }
   .market-price-line .price-value {
     color: #facc15;
     font-weight: 700;
+  }
+  .live-sync-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+  .live-sync-text .sync-count {
+    color: #f97316;
+  }
+  .safety-rule-item {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #d1d5db;
+    margin-bottom: 6px;
   }
 </style>
 </head>
@@ -194,10 +201,10 @@
 <div class="card">
   <h2>Live Sync</h2>
   <p class="muted small">Offers post instantly to a shared feed. Everyone browsing this page sees new offers in real time.</p>
-  <p><span id="exportMeta" class="sync-live">Connecting to live offer feed…</span></p>
+  <p class="live-sync-text"><span id="exportMeta">Connecting to live offer feed…</span></p>
 </div>
 
-<!-- ===== POST A NEW OFFER (description removed) ===== -->
+<!-- ===== POST A NEW OFFER ===== -->
 <div class="card">
   <h2>Post a New Offer</h2>
   <label>Type</label>
@@ -228,7 +235,7 @@
   <button id="signOfferBtn" disabled>Sign &amp; Post (mint 1 SOS)</button>
 </div>
 
-<!-- ===== MARKET PRICE (description removed) ===== -->
+<!-- ===== MARKET PRICE ===== -->
 <div class="card" id="marketCard">
   <h2>Market Price Overview</h2>
   <div class="market-price-line">
@@ -237,23 +244,18 @@
   <div class="market-price-line">
     Sell price (max): <span class="price-value" id="midSell">—</span>
   </div>
-  <p class="muted small" id="midMeta" style="margin-top:8px;">No priced offers yet</p>
+  <p class="muted small" id="midMeta" style="margin-top:8px;display:none;">No priced offers yet</p>
 </div>
 
 <!-- ===== SAFETY RULES ===== -->
 <div class="card warning-card">
   <h2>⚠ Safety Rules</h2>
-  <p class="info-text">
-    Pure P2P, no escrow. SOS mints and tx hashes are evidence only, not protection.<br>
-    Posting or accepting mints 1 SOS to that party.<br>
-    Deliver SOS first on-chain; only then send payment. Poster marks Closed after.<br>
-    Sell offer accepted → you mint SOS to buyer first; expect payment only after confirmation.<br>
-    Negative Effective balance (Trust − Push) blocks selling. Buy/accept to raise it.<br>
-    Flag no-pay reports non-payers (needs your mint tx as evidence) but does not reverse the deal.<br>
-    Trust = total SOS received.<br>
-    Push = SOS you minted via actions.<br>
-    Effective = Trust − Push (genuine unspent activity).
-  </p>
+  <p class="safety-rule-item">Sell offer accepted → you mint SOS to buyer first; expect payment only after confirmation.</p>
+  <p class="safety-rule-item">Negative Effective balance (Trust − Push) blocks selling. Buy/accept more SOS to raise it.</p>
+  <p class="safety-rule-item">Flag no-pay reports non-payers (needs your mint tx as evidence) but does not reverse the deal.</p>
+  <p class="safety-rule-item">Effective = Trust − Push (genuine unspent activity).</p>
+  <p class="safety-rule-item">Trust = total SOS received.</p>
+  <p class="safety-rule-item">Push = SOS you minted via actions.</p>
 </div>
 
 </div>
@@ -320,10 +322,10 @@
           const sorted = offers.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
           // Keep only latest 20
           const latest20 = sorted.slice(0, 20);
-          // Update live sync count (orange text)
+          // Update live sync count - white text with orange count
           const meta = document.getElementById('exportMeta');
           if (meta) {
-            meta.textContent = 'Live · ' + latest20.length + ' offer(s) synced';
+            meta.innerHTML = 'Live · <span class="sync-count">' + latest20.length + ' offer(s) synced</span>';
           }
           // Pass the filtered list to the original callback
           callback(latest20);
