@@ -7,10 +7,8 @@ let pendingOffers = [];
 let ethUsdPrice = null;
 
 const connectButton = document.getElementById("connectButton");
-const postOfferBtn = document.getElementById("postOfferBtn");
 const signOfferBtn = document.getElementById("signOfferBtn");
 
-postOfferBtn.disabled = true;
 signOfferBtn.disabled = true;
 
 // ---------- CONNECT ----------
@@ -20,7 +18,6 @@ connectButton.onclick = async function () {
     walletAddress = await connectWallet();
     document.getElementById("address").innerText = walletAddress;
     await refreshWallet();
-    postOfferBtn.disabled = false;
     signOfferBtn.disabled = false;
     document.getElementById("status").innerText = "Connected";
     renderOffers();
@@ -314,12 +311,6 @@ async function finishPost(offer, doSign) {
   updateExportUI();
   renderOffers();
 }
-
-postOfferBtn.onclick = async function () {
-  const offer = collectForm();
-  if (!offer) return;
-  await finishPost(offer, false);
-};
 
 signOfferBtn.onclick = async function () {
   const offer = collectForm();
