@@ -22,7 +22,7 @@
     margin-bottom: 4px;
     font-size: 14px;
     color: #ffffff;
-    font-weight: 700;
+    font-weight: 900; /* extra bold */
   }
   select {
     width: 100%;
@@ -90,8 +90,36 @@
     border: 1px solid var(--input-bg); border-radius: 10px; padding: 10px;
     font-size: 12px; font-family: monospace; box-sizing: border-box;
   }
-  .sync-live { color: #f97316; font-weight: 700; }
-  .effective-blue { color: var(--brand-blue-soft); font-weight: 700; }
+  .sync-live {
+    color: #f97316;
+    font-weight: 700;
+  }
+  /* remove green background from sync dot */
+  .sync-dot {
+    background: none !important;
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .sync-dot.sync-connected {
+    background: #22c55e !important;
+  }
+  .sync-dot.sync-connecting {
+    background: #facc15 !important;
+  }
+  .sync-dot.sync-disconnected {
+    background: #ef4444 !important;
+  }
+  .effective-blue {
+    color: var(--brand-blue-soft);
+    font-weight: 700;
+  }
+  /* remove numbering from card headings if we want */
+  .card h2 {
+    font-size: 1.25rem;
+  }
 </style>
 </head>
 <body>
@@ -105,9 +133,9 @@
   </div>
 </div>
 
-<!-- ===== 1. CONNECT WALLET ===== -->
+<!-- ===== CONNECT WALLET ===== -->
 <div class="card">
-  <h2>1. Connect Your Wallet</h2>
+  <h2>Connect Your Wallet</h2>
   <p class="muted small">Connect to view your balance, post offers, and interact with other users. No offer or trade can be made until you're connected.</p>
   <button id="connectButton">Connect Wallet</button>
   <p>Status:</p>
@@ -116,9 +144,20 @@
   <div id="address">-</div>
 </div>
 
-<!-- ===== 2. BROWSE OFFERS ===== -->
+<!-- ===== YOUR SOS BALANCE (moved before Browse) ===== -->
 <div class="card">
-  <h2>2. Browse Offers</h2>
+  <h2>Your SOS Balance</h2>
+  <p class="muted small">Trust is your total minted SOS — it's all SOS you've received from others or via pushForMe. Push counts how much you've minted through actions like posting, accepting, or closing offers.<br><br>Effective (Trust − Push) is the balance that reflects genuine, unspent activity.</p>
+  <p>Effective: <span id="effective" class="effective-blue">0</span></p>
+  <p>Trust: <span id="trust">0</span></p>
+  <p>Push: <span id="push">0</span></p>
+  <p class="muted small" id="effectiveHint" style="display:none;color:#fca5a5"></p>
+  <p>Total Supply: <span id="totalSupply">0</span></p>
+</div>
+
+<!-- ===== BROWSE OFFERS ===== -->
+<div class="card">
+  <h2>Browse Offers</h2>
   <p class="muted small">Filter by type, then use "Accept" to signal interest in an open offer, or "Close deal" as the poster once a trade is complete. See the Safety Rules below before accepting or delivering SOS.</p>
   <div class="filters">
     <button class="filter-btn active" data-filter="all">All</button>
@@ -128,16 +167,23 @@
   <div id="offersList" class="offers-list"><p class="muted">Loading…</p></div>
 </div>
 
-<!-- ===== 3. LIVE SYNC ===== -->
+<!-- ===== NAV LINKS (placed after Browse) ===== -->
+<div class="card nav-links" style="margin-bottom:3px;">
+  <p style="margin-bottom:12px;color:#9ca3af;font-size:14px;">More</p>
+  <a href="index.html" class="wallet">Wallet</a>
+  <a href="history.html" class="history">History</a>
+</div>
+
+<!-- ===== LIVE SYNC ===== -->
 <div class="card">
-  <h2>3. Live Sync</h2>
+  <h2>Live Sync</h2>
   <p class="muted small">Offers post instantly to a shared feed — no manual upload needed. Everyone browsing this page sees new offers, accepts, and closes in real time.</p>
   <p class="muted small"><span id="syncDot" class="sync-dot sync-connecting"></span><span id="exportMeta" class="sync-live">Connecting to live offer feed…</span></p>
 </div>
 
-<!-- ===== 4. POST A NEW OFFER ===== -->
+<!-- ===== POST A NEW OFFER ===== -->
 <div class="card">
-  <h2>4. Post a New Offer</h2>
+  <h2>Post a New Offer</h2>
   <p class="muted small">Posting signs the offer to prove authorship and mints 1 SOS to your wallet, then publishes it live for everyone. Fill in the details below and select Sign &amp; Post.</p>
   <label>Type</label>
   <select id="offerType">
@@ -167,18 +213,7 @@
   <button id="signOfferBtn" disabled>Sign &amp; Post (mint 1 SOS)</button>
 </div>
 
-<!-- ===== 5. YOUR SOS BALANCE ===== -->
-<div class="card">
-  <h2>Your SOS Balance</h2>
-  <p class="muted small">Trust is your total minted SOS — it's all SOS you've received from others or via pushForMe. Push counts how much you've minted through actions like posting, accepting, or closing offers.<br><br>Effective (Trust − Push) is the balance that reflects genuine, unspent activity.</p>
-  <p>Effective: <span id="effective" class="effective-blue">0</span></p>
-  <p>Trust: <span id="trust">0</span></p>
-  <p>Push: <span id="push">0</span></p>
-  <p class="muted small" id="effectiveHint" style="display:none;color:#fca5a5"></p>
-  <p>Total Supply: <span id="totalSupply">0</span></p>
-</div>
-
-<!-- ===== 6. MARKET PRICE ===== -->
+<!-- ===== MARKET PRICE ===== -->
 <div class="card" id="marketCard">
   <h2>Market Price Overview</h2>
   <p class="muted small">Calculated per 1 SOS from active sell/buy offers priced in USDC, USD, USDT, or ETH. Each offer's price is normalized by its amount first, so offers of different sizes are compared fairly.</p>
@@ -189,7 +224,7 @@
   <p class="muted small" id="midMeta">No priced offers yet</p>
 </div>
 
-<!-- ===== 7. ABOUT SIGNATURE ===== -->
+<!-- ===== ABOUT SIGNATURE (short version) ===== -->
 <div class="card info-card">
   <h2>About the Signature</h2>
   <p class="info-text">
@@ -197,7 +232,7 @@
   </p>
 </div>
 
-<!-- ===== 8. SAFETY RULES ===== -->
+<!-- ===== SAFETY RULES (short version) ===== -->
 <div class="card warning-card">
   <h2>⚠ Safety Rules — Please Read Before the Use</h2>
   <p class="info-text">
@@ -222,11 +257,7 @@
   </p>
 </div>
 
-<div class="card nav-links">
-  <p style="margin-bottom:12px;color:#9ca3af;font-size:14px">More</p>
-  <a href="index.html" class="wallet">Wallet</a>
-  <a href="history.html" class="history">History</a>
-</div>
+<!-- (nav links removed from here, already placed after Browse) -->
 
 </div>
 
@@ -257,24 +288,20 @@
   const offersRef = ref(db, "offers");
 
   window.SOSDB = {
-    // One-time load: returns an array of offers (converts the {id: offer} object to an array)
     async loadOffers() {
       const snap = await get(offersRef);
       const val = snap.val() || {};
       return Object.values(val);
     },
-    // Write/overwrite a single offer by id
     async saveOffer(offer) {
       await set(ref(db, "offers/" + offer.id), offer);
     },
-    // Live subscription: callback fires with a fresh array whenever the database changes
     watchOffers(callback) {
       onValue(offersRef, (snap) => {
         const val = snap.val() || {};
         callback(Object.values(val));
       });
     },
-    // Live subscription to actual connection state (Firebase's special local-only path)
     watchConnection(callback) {
       onValue(ref(db, ".info/connected"), (snap) => {
         callback(snap.val() === true);
