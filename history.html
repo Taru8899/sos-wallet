@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SOS69069 · Wallet History</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+.nav-links{
+text-align:center;
+margin:6px 0;
+}
+
+.nav-links a{
+margin:0 12px;
+text-decoration:none;
+font-size:20px;
+font-weight:700;
+}
+
+.nav-links .wallet{
+color:#facc15;
+}
+
+.nav-links .offers{
+color:var(--brand-green-bright);
+}
+
+#history{
+max-height:420px;
+overflow:auto;
+font-size:14px;
+}
+
+.event{
+border-bottom:1px solid var(--input-bg);
+padding:10px 0;
+}
+
+.event .dir-in{
+color:#22c55e;
+font-weight:bold;
+}
+
+.event .dir-out{
+color:#f97316;
+font-weight:bold;
+}
+
+.event .meta{
+font-size:13px;
+color:#9ca3af;
+margin-top:3px;
+}
+
+.event a{
+font-size:13px;
+color:var(--brand-blue-soft);
+}
+
+.loading{
+color:var(--brand-blue-soft);
+}
+
+.error{
+color:#ef4444;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header-row">
+<img src="logo.webp" alt="SOS69069" class="logo-badge">
+<div>
+<h1>SOS69069 History</h1>
+<p class="subtitle">Ethereum Mainnet</p>
+</div>
+</div>
+
+<div class="card" style="margin-bottom:3px">
+
+<h2>Lookup Wallet</h2>
+
+<input
+id="lookupAddress"
+placeholder="Paste wallet address 0x..."
+>
+
+<button id="lookupButton">
+Load Wallet
+</button>
+
+<button
+id="useConnectedButton"
+style="
+background:var(--brand-green-bright);
+color:#000;
+font-weight:700;
+">
+Use Connected Wallet
+</button>
+
+<p style="margin-top:8px">
+Status:
+</p>
+
+<div id="status">
+Ready
+</div>
+
+<p style="margin-top:8px">
+Wallet:
+</p>
+
+<div id="address">
+-
+</div>
+
+</div>
+
+<div class="card" style="margin-bottom:3px">
+
+<h2>SOS Balance</h2>
+
+<p>
+Effective:
+<span id="effective">0</span>
+</p>
+
+<p class="muted small" style="margin-top:8px">
+Trust:
+<span id="trust">0</span>
+·
+Push:
+<span id="push">0</span>
+·
+Total Supply:
+<span id="totalSupply">0</span>
+</p>
+
+<p style="margin-top:10px">
+
+<a
+id="etherscanLink"
+href="#"
+target="_blank"
+rel="noopener"
+style="color:var(--brand-blue-soft)"
+>
+Open on Etherscan →
+</a>
+
+</p>
+
+</div>
+
+<div class="card nav-links" style="margin-bottom:3px">
+
+<a href="index.html" class="wallet">
+Wallet
+</a>
+
+<a href="offers.html" class="offers">
+Offers
+</a>
+
+</div>
+
+<div class="card">
+
+<h2>Push History</h2>
+
+<p style="color:#9ca3af;font-size:14px;margin-bottom:8px">
+Last 10 SOS token transfers (same source as Etherscan Token Transfers).
+</p>
+
+<div id="history">
+No data yet. Enter an address above.
+</div>
+
+</div>
+
+</div>
+
+<script type="module">
+import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.min.js";
+window.ethers = ethers;
+</script>
+
+<script>
+
+// ===============================
+// SOS69069 History page
+// Balances: on-chain RPC
+// History: Blockscout tokentx API (Etherscan-compatible)
+// ===============================
+  const SOS_CONTRACT = "0x61af906f53Eb927790055AC8eA99916a01873c15";
+
+const MAX_TX_SHOW = 10;
+
+const RPC_LIST = [
+  "https://ethereum.publicnode.com",
+  "https://rpc.ankr.com/eth",
+  "https://eth.llamarpc.com",
+  "https://1rpc.io/eth"
+];
+
+const SOS_ABI = [
+{
+"inputs":[{"internalType":"address","name":"account","type":"address"}],
+"name":"balanceOf",
+"outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+"stateMutability":"view",
+"type":"function"
+},
+{
+"inputs":[{"internalType":"address","name":"user","type":"address"}],
+"name":"pushCountOf",
+"outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+"stateMutability":"view",
+"type":"function"
+},
+{
+"inputs":[],
+"name":"totalSupply",
+"outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+"stateMutability":"view",
+"type":"function"
+}
+];
+
+let readProvider = null;
+let readContract = null;
+let currentRpcIndex = 0;
+
+function setStatus(msg){
+document.getElementById("status").innerText = msg;
+}
+
+function short(addr){
+if(!addr) return "—";
+return addr.slice(0,6)+"…"+addr.slice(-4);
+}
+
+function makeProvider(url){
+return new ethers.JsonRpcProvider(
+url,
+1,
+{ staticNetwork:true }
+);
+}
+
+async function initRead(forceNext){
+
+if(forceNext) currentRpcIndex++;
+
+if(currentRpcIndex>=RPC_LIST.length)
+currentRpcIndex=0;
+
+readProvider = makeProvider(
+RPC_LIST[currentRpcIndex]
+);
+
+readContract = new ethers.Contract(
+SOS_CONTRACT,
+SOS_ABI,
+readProvider
+);
+
+}
+
+async function withProvider(fn){
+
+let lastErr;
+
+for(let i=0;i<RPC_LIST.length;i++){
+
+try{
+
+if(!readProvider || i>0)
+await initRead(i>0);
+
+return await fn(
+readContract,
+readProvider
+);
+
+}catch(err){
+
+lastErr = err;
+
+console.warn(err);
+
+readProvider = null;
+readContract = null;
+
+}
+
+}
+
+throw lastErr;
+
+}
+
+async function loadBalances(address){
+
+await withProvider(async(c)=>{
+
+const trust =
+await c.balanceOf(address);
+
+const push =
+await c.pushCountOf(address);
+
+const total =
+await c.totalSupply();
+
+const effective =
+BigInt(trust)-BigInt(push);
+
+document.getElementById("address").innerText =
+address;
+
+document.getElementById("effective").innerText =
+effective.toString();
+
+document.getElementById("trust").innerText =
+trust.toString();
+
+document.getElementById("push").innerText =
+push.toString();
+
+document.getElementById("totalSupply").innerText =
+total.toString();
+
+const link =
+document.getElementById("etherscanLink");
+
+link.href =
+"https://etherscan.io/token/"
++SOS_CONTRACT+
+"?a="+address;
+
+link.innerText =
+"Open on Etherscan →";
+
+});
+
+}
+  function formatTime(ts){
+
+if(!ts) return "";
+
+try{
+
+const d = new Date(Number(ts)*1000);
+
+return d.toLocaleString();
+
+}catch(e){
+
+return "";
+
+}
+
+}
+
+
+
+async function fetchTokenTxs(address){
+
+const params =
+"module=account&action=tokentx" +
+"&contractaddress=" + SOS_CONTRACT +
+"&address=" + address +
+"&page=1&offset=" + MAX_TX_SHOW +
+"&sort=desc";
+
+
+let lastErr = null;
+
+
+// Blockscout
+
+try{
+
+const url =
+"https://eth.blockscout.com/api?" + params;
+
+
+const res = await fetch(url);
+
+const data = await res.json();
+
+
+if(
+data &&
+(data.status==="1" || data.message==="OK") &&
+Array.isArray(data.result)
+){
+
+return data.result.slice(0,MAX_TX_SHOW);
+
+}
+
+
+lastErr =
+new Error(
+(data && data.result) ||
+(data && data.message) ||
+"Blockscout empty"
+);
+
+
+}catch(err){
+
+lastErr = err;
+
+console.warn(
+"Blockscout failed",
+err
+);
+
+}
+
+
+
+// Etherscan optional key
+
+if(window.ETHERSCAN_API_KEY){
+
+try{
+
+
+const url =
+"https://api.etherscan.io/v2/api?chainid=1&" +
+params +
+"&apikey=" +
+encodeURIComponent(window.ETHERSCAN_API_KEY);
+
+
+const res = await fetch(url);
+
+const data = await res.json();
+
+
+if(
+data &&
+data.status==="1" &&
+Array.isArray(data.result)
+){
+
+return data.result.slice(0,MAX_TX_SHOW);
+
+}
+
+
+lastErr =
+new Error(
+(data && data.result) ||
+"Etherscan error"
+);
+
+
+}catch(err){
+
+lastErr = err;
+
+}
+
+}
+
+
+throw lastErr ||
+new Error("Could not load token transfers");
+
+
+}
+
+
+
+
+
+async function loadHistory(address){
+
+const historyDiv =
+document.getElementById("history");
+
+
+historyDiv.innerHTML =
+'<div class="loading">Loading token transfers…</div>';
+
+
+try{
+
+
+setStatus("Loading token transfers…");
+
+
+const txs =
+await fetchTokenTxs(address);
+
+
+
+if(!txs || txs.length===0){
+
+
+historyDiv.innerHTML =
+'<div class="event">No SOS token transfers found for this address.</div>' +
+'<div class="event meta">' +
+'<a href="https://etherscan.io/address/' +
+address +
+'#tokentxns" target="_blank">' +
+'Open on Etherscan →</a></div>';
+
+
+return;
+
+}
+
+
+
+let html="";
+
+
+for(const tx of txs){
+
+
+const from =
+(tx.from || "").toLowerCase();
+
+
+const to =
+(tx.to || "").toLowerCase();
+
+
+const me =
+address.toLowerCase();
+
+
+const isIn =
+to===me;
+
+
+const isSelf =
+from===to;
+
+
+let direction;
+
+
+if(isSelf){
+
+direction =
+'<span class="dir-in">● Self push</span>';
+
+}
+else if(isIn){
+
+direction =
+'<span class="dir-in">← Received</span>';
+
+}
+else{
+
+direction =
+'<span class="dir-out">→ Sent</span>';
+
+}
+
+
+
+const counterparty =
+isIn ? tx.from : tx.to;
+
+
+html +=
+
+'<div class="event">' +
+
+direction +
+" " +
+(tx.value || "0") +
+" SOS" +
+
+'<div class="meta">' +
+
+(from===to
+?
+"self"
+:
+(isIn ? "from " : "to ")) +
+
+short(counterparty) +
+
+" · block " +
+(tx.blockNumber || "?") +
+
+'</div>' +
+
+'<a href="https://etherscan.io/tx/' +
+tx.hash +
+'" target="_blank">' +
+
+"tx " +
+tx.hash.slice(0,10) +
+"…</a>" +
+
+"</div>";
+
+}
+
+
+
+historyDiv.innerHTML = html;
+
+
+
+}
+catch(err){
+
+
+console.error(err);
+
+
+historyDiv.innerHTML =
+'<div class="event error">' +
+"Could not load history: " +
+(err.message || err) +
+"</div>";
+
+
+}
+
+
+}
+  async function lookup(rawAddress){
+
+try{
+
+if(!window.ethers){
+
+throw new Error(
+"ethers.js not loaded yet — wait and try again"
+);
+
+}
+
+
+const address =
+ethers.getAddress(
+rawAddress.trim()
+);
+
+
+// NEW: show wallet address block
+document.getElementById("address").innerText =
+address;
+
+
+
+setStatus(
+"Loading balances…"
+);
+
+
+
+await loadBalances(address);
+
+
+
+await loadHistory(address);
+
+
+
+setStatus(
+"Done"
+);
+
+
+
+const url =
+new URL(
+window.location.href
+);
+
+
+url.searchParams.set(
+"address",
+address
+);
+
+
+window.history.replaceState(
+{},
+"",
+url
+);
+
+
+
+}
+catch(err){
+
+console.error(err);
+
+
+setStatus(
+err.shortMessage ||
+err.message ||
+String(err)
+);
+
+}
+
+}
+
+
+
+
+
+document.getElementById("lookupButton").onclick =
+function(){
+
+
+const addr =
+document.getElementById("lookupAddress").value;
+
+
+if(!addr || !addr.trim()){
+
+
+setStatus(
+"Enter an address"
+);
+
+
+return;
+
+}
+
+
+lookup(addr);
+
+
+};
+
+
+
+
+
+
+document.getElementById("useConnectedButton").onclick =
+async function(){
+
+
+try{
+
+
+if(!window.ethereum){
+
+
+throw new Error(
+"No wallet found. Install MetaMask or open in wallet browser."
+);
+
+
+}
+
+
+
+setStatus(
+"Connecting…"
+);
+
+
+
+const accounts =
+await window.ethereum.request(
+{
+method:"eth_requestAccounts"
+}
+);
+
+
+
+if(!accounts || !accounts[0]){
+
+throw new Error(
+"No account returned"
+);
+
+}
+
+
+
+document.getElementById("lookupAddress").value =
+accounts[0];
+
+
+// NEW: show connected wallet immediately
+document.getElementById("address").innerText =
+accounts[0];
+
+
+
+await lookup(
+accounts[0]
+);
+
+
+
+}
+catch(err){
+
+
+console.error(err);
+
+
+setStatus(
+err.message ||
+String(err)
+);
+
+
+}
+
+
+};
+
+
+
+
+
+
+
+window.addEventListener(
+"load",
+function(){
+
+
+const params =
+new URLSearchParams(
+window.location.search
+);
+
+
+
+const a =
+params.get("address");
+
+
+
+if(a){
+
+
+document.getElementById("lookupAddress").value =
+a;
+
+
+
+setTimeout(
+function(){
+
+lookup(a);
+
+},
+400
+);
+
+
+}
+
+
+}
+
+);
+
+</script>
+
+</body>
+
+</html>
