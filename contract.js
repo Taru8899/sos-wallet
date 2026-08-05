@@ -504,3 +504,20 @@ if(window.ethereum){
 
 
 }
+
+
+// ===============================
+// EXPOSE FUNCTIONS TO GLOBAL SCOPE
+// ===============================
+
+// Make all functions available globally for legacy.html and other pages
+window.connectWallet = connectWallet;
+window.getTrust = getTrust;
+window.getPushCount = getPushCount;
+window.getTotalSupply = getTotalSupply;
+window.pushTo = pushTo;
+window.pushForMe = pushForMe;
+window.switchToEthereum = switchToEthereum;
+window.getInjectedProvider = getInjectedProvider;
+
+console.log('✅ SOS69069 contract functions exposed to window');
