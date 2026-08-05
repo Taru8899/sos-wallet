@@ -156,6 +156,55 @@
     <!-- UI -->
     <script src="app.js?v=5"></script>
 
+    <!-- Auto-connect — same behaviour as history.html -->
+    <script>
+        window.addEventListener("load", function () {
+            // Give app.js + contract.js time to define connectWallet / refreshWallet
+            setTimeout(async function () {
+                try {
+                    if (!window.ethereum) return;
+
+                    // eth_accounts returns already-authorized accounts without a popup
+                    const accounts = await window.ethereum.request({
+                        method: "eth_accounts"
+                    });
+
+                    if (!accounts || !accounts[0]) return;
+
+                    // Re-use the exact same path as the Connect button
+                    document.getElementById("status").innerText = "Connecting…";
+
+                    // connectWallet() is defined in contract.js
+                    const addr = await connectWallet();
+
+                    // These globals / functions come from app.js
+                    if (typeof walletAddress !== "undefined") {
+                        walletAddress = addr;
+                    }
+
+                    document.getElementById("address").innerText = addr;
+
+                    const receiverInput = document.getElementById("receiver");
+                    if (receiverInput) {
+                        receiverInput.value = "0x1C10e6574ee696f54b21A611a21313E4714628ad";
+                    }
+
+                    if (typeof refreshWallet === "function") {
+                        await refreshWallet();
+                    }
+
+                    const mintBtn = document.getElementById("mintButton");
+                    if (mintBtn) mintBtn.disabled = false;
+
+                    document.getElementById("status").innerText = "Connected";
+                } catch (err) {
+                    console.warn("Auto-connect failed:", err);
+                    // Leave status as Ready — user can still click the button
+                }
+            }, 600);
+        });
+    </script>
+
 </body>
 
 </html>
