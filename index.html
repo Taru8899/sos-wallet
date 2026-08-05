@@ -100,19 +100,19 @@
         }
         #wcModal .deep-links button {
             width: auto;
-            padding: 8px 14px;
-            font-size: 12px;
+            padding: 10px 16px;
+            font-size: 13px;
             border-radius: 8px;
             border: none;
             cursor: pointer;
             color: white;
             font-weight: 700;
+            flex: 1;
+            min-width: 80px;
         }
         .btn-deep-metamask { background: #f6851b; }
+        .btn-deep-tokenpocket { background: #2980fe; }
         .btn-deep-trust { background: #3375bb; }
-        .btn-deep-coinbase { background: #0052ff; }
-        .btn-deep-rainbow { background: #fc6b4b; }
-        .btn-deep-zerion { background: #2962ef; }
         .btn-cancel-wc {
             background: #4b5563;
             margin-top: 10px;
@@ -132,6 +132,12 @@
             font-size: 14px;
             margin: 8px 0;
             font-weight: 700;
+        }
+        .wc-status.error {
+            color: #ef4444;
+        }
+        .wc-status.success {
+            color: #22c55e;
         }
 
         /* Mobile detection - show WalletConnect button only on mobile */
@@ -359,17 +365,15 @@
             <p>Scan this QR code with your mobile wallet app</p>
 
             <div class="qr-wrapper" id="qrWrapper">
-                <div id="qrDisplay" style="color:#9ca3af;padding:20px;">Generating QR code...</div>
+                <div id="qrDisplay" style="color:#9ca3af;padding:20px;">⏳ Loading QR code...</div>
             </div>
 
-            <div class="wc-status" id="wcStatus">Waiting for connection...</div>
+            <div class="wc-status" id="wcStatus">⏳ Waiting for connection...</div>
 
             <div class="deep-links">
                 <button class="btn-deep-metamask" onclick="openDeepLink('metamask')">🦊 MetaMask</button>
+                <button class="btn-deep-tokenpocket" onclick="openDeepLink('tokenpocket')">🔷 TokenPocket</button>
                 <button class="btn-deep-trust" onclick="openDeepLink('trust')">🟣 Trust</button>
-                <button class="btn-deep-coinbase" onclick="openDeepLink('coinbase')">🔵 Coinbase</button>
-                <button class="btn-deep-rainbow" onclick="openDeepLink('rainbow')">🌈 Rainbow</button>
-                <button class="btn-deep-zerion" onclick="openDeepLink('zerion')">⚡ Zerion</button>
             </div>
 
             <div class="wc-uri-box">
@@ -388,8 +392,40 @@
         console.log("✅ ethers.js loaded");
     </script>
 
-    <!-- WalletConnect Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3wallet@1.12.0/dist/standalone.js">
+    <!-- WalletConnect Library - load with proper error handling -->
+    <script>
+        // Load WalletConnect library dynamically
+        function loadWalletConnect() {
+            return new Promise((resolve, reject) => {
+                // Check if already loaded
+                if (typeof WalletConnect !== 'undefined') {
+                    resolve();
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@walletconnect/web3wallet@1.12.0/dist/standalone.js';
+                script.onload = function() {
+                    console.log('✅ WalletConnect library loaded');
+                    resolve();
+                };
+                script.onerror = function() {
+                    reject(new Error('Failed to load WalletConnect library'));
+                };
+                document.head.appendChild(script);
+
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    if (typeof WalletConnect === 'undefined') {
+                        reject(new Error('WalletConnect library load timeout'));
+                    }
+                }, 10000);
+            });
+        }
+
+        // Store the load function globally
+        window.loadWalletConnect = loadWalletConnect;
+        console.log("✅ WalletConnect loader ready");
     </script>
 
     <!-- SOS contract -->
@@ -464,18 +500,16 @@
         // ── Deep Link Functions ──
         function openDeepLink(wallet) {
             const uri = wcUriDisplay.innerText;
-            if (!uri || uri === 'Waiting for connection...') {
-                alert('Please wait for the QR code to generate');
+            if (!uri || uri === 'Waiting for connection...' || uri === '⏳ Generating connection...') {
+                alert('Please wait for the WalletConnect URI to generate');
                 return;
             }
 
             const encodedUri = encodeURIComponent(uri);
             const links = {
                 metamask: 'https://metamask.app.link/wc?uri=' + encodedUri,
-                trust: 'https://link.trustwallet.com/wc?uri=' + encodedUri,
-                coinbase: 'https://wallet.coinbase.com/wc?uri=' + encodedUri,
-                rainbow: 'https://rainbow.me/wc?uri=' + encodedUri,
-                zerion: 'https://app.zerion.io/wc?uri=' + encodedUri
+                tokenpocket: 'https://tokenpocket.pro/wc?uri=' + encodedUri,
+                trust: 'https://link.trustwallet.com/wc?uri=' + encodedUri
             };
 
             const url = links[wallet];
@@ -495,14 +529,30 @@
 
                 setStatus('Connecting via WalletConnect...', 'warning');
                 showWCModal();
-                wcStatus.innerText = '⏳ Initializing...';
+                wcStatus.innerText = '⏳ Loading WalletConnect...';
+                wcStatus.className = 'wc-status';
 
-                // Check if library loaded
+                // Load WalletConnect library if not already loaded
                 if (typeof WalletConnect === 'undefined') {
-                    wcStatus.innerText = '❌ WalletConnect library not loaded';
-                    setStatus('WalletConnect library not loaded. Please refresh.', 'error');
+                    try {
+                        await window.loadWalletConnect();
+                    } catch (loadErr) {
+                        wcStatus.innerText = '❌ ' + loadErr.message;
+                        wcStatus.className = 'wc-status error';
+                        setStatus('Failed to load WalletConnect library', 'error');
+                        return;
+                    }
+                }
+
+                // Double check if loaded
+                if (typeof WalletConnect === 'undefined') {
+                    wcStatus.innerText = '❌ WalletConnect library not available';
+                    wcStatus.className = 'wc-status error';
+                    setStatus('WalletConnect library not available. Please refresh.', 'error');
                     return;
                 }
+
+                wcStatus.innerText = '⏳ Initializing connection...';
 
                 const metadata = {
                     name: "SOS69069",
@@ -534,6 +584,7 @@
                 `;
 
                 wcStatus.innerText = '📱 Scan with your mobile wallet';
+                wcStatus.className = 'wc-status';
                 setStatus('Waiting for wallet connection...', 'warning');
 
                 // Set timeout
@@ -541,6 +592,7 @@
                 wcTimeout = setTimeout(() => {
                     if (!isWcConnected) {
                         wcStatus.innerText = '⏰ Connection timeout. Try again.';
+                        wcStatus.className = 'wc-status error';
                         setStatus('Connection timeout. Try again.', 'error');
                     }
                 }, 120000);
@@ -599,6 +651,7 @@
                 setAddress(address, 'walletconnect');
                 setStatus('Connected via WalletConnect!', 'connected');
                 wcStatus.innerText = '✅ Connected!';
+                wcStatus.className = 'wc-status success';
 
                 // Load balance
                 if (typeof refreshWallet === 'function') {
@@ -653,8 +706,10 @@
 
             } catch (err) {
                 console.error("WalletConnect error:", err);
-                wcStatus.innerText = '❌ ' + (err.message || String(err));
-                setStatus('❌ ' + (err.message || String(err)), 'error');
+                const errorMsg = err.message || String(err);
+                wcStatus.innerText = '❌ ' + errorMsg;
+                wcStatus.className = 'wc-status error';
+                setStatus('❌ ' + errorMsg, 'error');
                 if (wcTimeout) {
                     clearTimeout(wcTimeout);
                     wcTimeout = null;
