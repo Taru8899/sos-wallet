@@ -106,7 +106,7 @@
     </p>
     <p style="margin-top:8px">
       Trust: <span id="myTrust">0</span> ·
-      Push: <span id="myPush">0</span>
+      Push: <span id="myPush">0</span> ·
       Total Supply: <span id="totalSupply">0</span>
     </p>
   </div>
@@ -247,10 +247,12 @@
     if (!walletAddress) return;
     const trust = await getTrust(walletAddress);
     const push = await getPushCount(walletAddress);
+    const total = await getTotalSupply();
     myPush = BigInt(push);
     $("myTrust").innerText = trust.toString();
     $("myPush").innerText = push.toString();
     $("myEffective").innerText = (BigInt(trust) - BigInt(push)).toString();
+    $("totalSupply").innerText = total.toString();
   }
 
   // ── load old address ──
