@@ -23,6 +23,142 @@
         .nav-links .offers { color: var(--brand-green-bright); }
         .nav-links .legacy { color: #a78bfa; }
 
+        /* Mobile Wallet Modal */
+        #wcModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        #wcModal.active {
+            display: flex;
+        }
+        #wcModal .modal-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px 20px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid #2d8cff;
+            box-shadow: 0 0 40px rgba(45, 140, 255, 0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        #wcModal h3 {
+            color: #5b8bff;
+            margin-bottom: 6px;
+            font-size: 20px;
+        }
+        #wcModal p {
+            color: #9ca3af;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        #wcModal .deep-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 16px 0;
+        }
+        #wcModal .deep-links button {
+            width: 100%;
+            padding: 14px 20px;
+            font-size: 16px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        #wcModal .deep-links button:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+        #wcModal .deep-links button:active {
+            transform: scale(0.98);
+        }
+        .btn-deep-metamask { 
+            background: #f6851b; 
+        }
+        .btn-deep-tokenpocket { 
+            background: #2980fe; 
+        }
+        .btn-deep-trust { 
+            background: #3375bb; 
+        }
+        .btn-cancel-wc {
+            background: #4b5563;
+            margin-top: 10px;
+            width: auto;
+            padding: 10px 30px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-cancel-wc:hover {
+            background: #6b7280;
+        }
+        .wc-status {
+            color: #facc15;
+            font-size: 14px;
+            margin: 8px 0;
+            font-weight: 700;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+        }
+        .wc-status.error {
+            color: #ef4444;
+        }
+        .wc-status.success {
+            color: #22c55e;
+        }
+        .wc-status.info {
+            color: #5b8bff;
+        }
+
+        /* Mobile detection - show WalletConnect button only on mobile */
+        .wc-mobile-btn {
+            display: none;
+            background: #3b99fc;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .wc-mobile-btn:hover {
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .wc-mobile-btn {
+                display: block;
+            }
+            #connectButton {
+                margin-bottom: 6px;
+            }
+        }
+
         /* Keep original button styles */
         #connectButton {
             width: 100%;
@@ -87,73 +223,26 @@
             margin-top: 6px;
         }
 
-        /* MetaMask link and button - same size */
-        .metamask-row {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-            align-items: center;
+        .wallet-icon {
+            font-size: 24px;
         }
+
+        /* MetaMask link under connect button */
         .metamask-link {
-            flex: 1;
+            display: block;
             text-align: center;
-            padding: 12px 16px;
+            margin-top: 8px;
             font-size: 14px;
             color: var(--brand-blue-soft);
             text-decoration: none;
             font-weight: 600;
-            background: rgba(45, 140, 255, 0.1);
-            border-radius: 10px;
-            border: 1px solid rgba(45, 140, 255, 0.2);
-            transition: all 0.2s;
-            cursor: pointer;
         }
         .metamask-link:hover {
-            background: rgba(45, 140, 255, 0.2);
-            text-decoration: none;
-            opacity: 0.9;
+            text-decoration: underline;
+            opacity: 0.8;
         }
         .metamask-link .link-icon {
             margin-right: 4px;
-        }
-
-        .metamask-mobile-btn {
-            flex: 1;
-            text-align: center;
-            padding: 12px 16px;
-            font-size: 14px;
-            font-weight: 600;
-            background: #f6851b;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .metamask-mobile-btn:hover {
-            opacity: 0.9;
-            transform: scale(1.02);
-        }
-        .metamask-mobile-btn:active {
-            transform: scale(0.98);
-        }
-
-        /* Hide mobile button on desktop */
-        @media (min-width: 769px) {
-            .metamask-mobile-btn {
-                display: none;
-            }
-        }
-
-        /* Show both on mobile */
-        @media (max-width: 768px) {
-            .metamask-row {
-                flex-direction: column;
-            }
-            .metamask-link,
-            .metamask-mobile-btn {
-                width: 100%;
-            }
         }
     </style>
 
@@ -187,15 +276,15 @@
                 Connect Wallet
             </button>
 
-            <!-- MetaMask row: Link + Mobile Button -->
-            <div class="metamask-row">
-                <a href="#" onclick="openMetaMaskLink(); return false;" class="metamask-link" id="metamaskLink">
-                    <span class="link-icon">🦊</span> MetaMask Wallet
-                </a>
-                <button class="metamask-mobile-btn" onclick="openMetaMaskMobile();">
-                    📱 Open MetaMask
-                </button>
-            </div>
+            <!-- MetaMask link under connect button -->
+            <a href="https://metamask.app.link/dapp/" target="_blank" class="metamask-link" id="metamaskLink">
+                <span class="link-icon">🦊</span> MetaMask Wallet
+            </a>
+
+            <!-- Mobile wallet button - only shows on mobile -->
+            <button id="wcMobileBtn" class="wc-mobile-btn">
+                📱 Open Mobile Wallet
+            </button>
 
             <p style="margin-top:8px">Status:</p>
 
@@ -288,6 +377,37 @@
 
     </div>
 
+    <!-- Mobile Wallet Modal - Direct Deep Links -->
+    <div id="wcModal">
+        <div class="modal-content">
+            <h3>📱 Open Your Mobile Wallet</h3>
+            <p>Choose your wallet to connect</p>
+
+            <div class="wc-status info" id="wcStatus">💡 Your wallet app will open automatically</div>
+
+            <div class="deep-links">
+                <button class="btn-deep-metamask" onclick="openWallet('metamask')">
+                    <span class="wallet-icon">🦊</span> MetaMask
+                </button>
+                <button class="btn-deep-tokenpocket" onclick="openWallet('tokenpocket')">
+                    <span class="wallet-icon">🔷</span> TokenPocket
+                </button>
+                <button class="btn-deep-trust" onclick="openWallet('trust')">
+                    <span class="wallet-icon">🟣</span> Trust Wallet
+                </button>
+            </div>
+
+            <div style="margin-top:12px;padding:12px;background:#1a1a2e;border-radius:8px;border:1px solid #2d2d4a;">
+                <p style="color:#9ca3af;font-size:13px;margin:0;">
+                    ⚡ After connecting, return to this page.<br>
+                    <span style="color:#5b8bff;font-weight:700;">Make sure you're on Ethereum Mainnet</span>
+                </p>
+            </div>
+
+            <button class="btn-cancel-wc" onclick="closeWCModal()">✕ Cancel</button>
+        </div>
+    </div>
+
     <!-- ethers.js v6 -->
     <script type="module">
         import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.min.js";
@@ -302,13 +422,15 @@
     <script src="app.js?v=6"></script>
 
     <!-- ============================================================ -->
-    <!-- METAMASK DEEP LINKS                                           -->
+    <!-- DIRECT DEEP LINKS - MetaMask, TokenPocket, Trust Wallet       -->
     <!-- ============================================================ -->
     <script>
         // ── DOM References ──
         const statusEl = document.getElementById('status');
         const addressEl = document.getElementById('address');
         const methodBadge = document.getElementById('methodBadge');
+        const wcModal = document.getElementById('wcModal');
+        const wcStatus = document.getElementById('wcStatus');
 
         // ── Helper Functions ──
         function setStatus(text, type) {
@@ -336,47 +458,88 @@
             addressEl.innerHTML = addrText + ' ' + badgeHtml;
         }
 
-        // ── FIXED: MetaMask Link Function (Desktop) ──
-        function openMetaMaskLink() {
-            const currentUrl = window.location.href;
-            const encodedUrl = encodeURIComponent(currentUrl);
-            
-            // For desktop: open MetaMask extension or prompt to install
-            const metamaskUrl = 'https://metamask.app.link/dapp/' + encodedUrl;
-            
-            // Try to open
-            window.open(metamaskUrl, '_blank');
-            
-            setStatus('🦊 Opening MetaMask...', 'info');
-            
-            setTimeout(() => {
-                setStatus('🔄 If MetaMask didn\'t open, click Connect Wallet above', 'info');
-            }, 3000);
-            
-            return false;
+        function showWCModal() {
+            wcModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            wcStatus.innerText = '💡 Your wallet app will open automatically';
+            wcStatus.className = 'wc-status info';
         }
-        window.openMetaMaskLink = openMetaMaskLink;
 
-        // ── MetaMask Mobile Button Function ──
-        function openMetaMaskMobile() {
+        function closeWCModal() {
+            wcModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        window.closeWCModal = closeWCModal;
+
+        // ── Direct Deep Link Functions ──
+        function openWallet(wallet) {
+            const statusMsg = document.getElementById('wcStatus');
+            
+            // Get the current page URL
             const currentUrl = window.location.href;
             const encodedUrl = encodeURIComponent(currentUrl);
             
-            // Mobile deep link - opens MetaMask app directly
-            const metamaskUrl = 'https://metamask.app.link/dapp/' + encodedUrl;
-            
-            // Try to open
-            window.open(metamaskUrl, '_blank');
-            
-            setStatus('📱 Opening MetaMask app...', 'info');
-            
-            setTimeout(() => {
-                setStatus('🔄 Return to this page after connecting in MetaMask', 'info');
-            }, 3000);
-            
-            return false;
+            // Deep link URLs for each wallet with proper page loading
+            const links = {
+                metamask: {
+                    url: 'https://metamask.app.link/dapp/' + encodedUrl,
+                    name: 'MetaMask'
+                },
+                tokenpocket: {
+                    url: 'https://tokenpocket.pro/dapp/' + encodedUrl,
+                    name: 'TokenPocket'
+                },
+                trust: {
+                    url: 'https://link.trustwallet.com/open?url=' + encodedUrl,
+                    name: 'Trust Wallet'
+                }
+            };
+
+            const walletData = links[wallet];
+            if (!walletData) {
+                statusMsg.innerText = '❌ Unknown wallet selected';
+                statusMsg.className = 'wc-status error';
+                return;
+            }
+
+            statusMsg.innerText = '⏳ Opening ' + walletData.name + '...';
+            statusMsg.className = 'wc-status info';
+
+            try {
+                window.open(walletData.url, '_blank');
+                
+                statusMsg.innerText = '✅ ' + walletData.name + ' opened! Return to this page after connecting.';
+                statusMsg.className = 'wc-status success';
+                
+                setTimeout(() => {
+                    closeWCModal();
+                }, 3000);
+                
+                setStatus('📱 Wallet opened - return here after connecting', 'info');
+            } catch (err) {
+                console.error('Failed to open wallet:', err);
+                statusMsg.innerText = '❌ Could not open ' + walletData.name + '. Please open the app manually.';
+                statusMsg.className = 'wc-status error';
+            }
         }
-        window.openMetaMaskMobile = openMetaMaskMobile;
+        window.openWallet = openWallet;
+
+        // ── Mobile Wallet Button ──
+        document.getElementById('wcMobileBtn').onclick = function() {
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            if (!isMobile) {
+                setStatus('📱 This feature is for mobile devices', 'info');
+                return;
+            }
+            showWCModal();
+        };
+
+        // ── Close modal on outside click ──
+        wcModal.addEventListener('click', function(e) {
+            if (e.target === wcModal) {
+                closeWCModal();
+            }
+        });
 
         // ── Auto-reconnect when returning from wallet ──
         window.addEventListener('focus', async function() {
@@ -410,7 +573,7 @@
             }
         });
 
-        console.log("✅ MetaMask deep links loaded");
+        console.log("✅ Direct Deep Links loaded (MetaMask, TokenPocket, Trust Wallet)");
     </script>
 
     <!-- Auto-connect — same behaviour as history.html -->
