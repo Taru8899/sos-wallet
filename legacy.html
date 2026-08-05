@@ -81,7 +81,7 @@
   </div>
 
   <!-- NAV -->
-  <div class="card nav-links" style="margin-bottom:3px">
+  <div class="card nav-links" style="margin-bottom:1px">
     <a href="index.html" class="wallet">Wallet</a>
     <a href="history.html" class="history">History</a>
     <a href="offers.html" class="offers">Offers</a>
@@ -97,9 +97,9 @@
     <div id="address">-</div>
   </div>
 
-  <!-- YOUR BALANCE -->
+  <!-- YOUR BALANCE — same style as index.html -->
   <div class="card" style="margin-bottom:3px">
-    <h2>Your SOS Balance</h2>
+    <h2>SOS Balance</h2>
     <p style="font-size:1.2rem;font-weight:700">
       Effective:
       <span id="myEffective" style="color:var(--brand-blue-soft)">0</span>
@@ -110,11 +110,12 @@
     </p>
   </div>
 
-  <!-- LOOKUP OLD ADDRESS -->
+  <!-- OLD ADDRESS INPUT (heading removed) -->
   <div class="card" style="margin-bottom:3px">
-    <h2>Old (lost) address</h2>
     <input id="oldAddress" placeholder="0x… paste the address you want to succeed">
-    <button id="loadOldBtn" style="margin-top:8px">Load old address data</button>
+    <button id="loadOldBtn" style="margin-top:8px;background:var(--brand-green)">
+      Connect Wallet
+    </button>
     <div id="oldData" style="margin-top:12px;display:none">
       <p style="font-size:1.2rem;font-weight:700">
         Effective:
@@ -566,13 +567,31 @@
   $("doPushBtn").onclick = () => doPushes(1);
   $("doPush5Btn").onclick = () => doPushes(5);
 
-  // auto-fill from URL ?old=0x...
-  window.addEventListener("load", () => {
+  // Auto-connect wallet + auto-fill from URL ?old=0x...
+  window.addEventListener("load", function () {
+    setTimeout(async function () {
+      try {
+        if (!window.ethereum) return;
+        const accounts = await window.ethereum.request({ method: "eth_accounts" });
+        if (!accounts || !accounts[0]) return;
+
+        setStatus("Connecting…");
+        walletAddress = await connectWallet();
+        $("address").innerText = walletAddress;
+        await refreshMyBalance();
+        setStatus("Connected", "success");
+        $("startAttemptBtn").disabled = !oldAddr;
+        updatePushButtons();
+      } catch (err) {
+        console.warn("Auto-connect failed:", err);
+      }
+    }, 600);
+
     const params = new URLSearchParams(window.location.search);
     const o = params.get("old");
     if (o) {
       $("oldAddress").value = o;
-      setTimeout(() => $("loadOldBtn").click(), 500);
+      setTimeout(() => $("loadOldBtn").click(), 800);
     }
   });
 })();
