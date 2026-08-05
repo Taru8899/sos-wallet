@@ -521,3 +521,72 @@ window.switchToEthereum = switchToEthereum;
 window.getInjectedProvider = getInjectedProvider;
 
 console.log('✅ SOS69069 contract functions exposed to window');
+
+
+// ===============================
+// WALLETCONNECT SUPPORT
+// ===============================
+// Added to support WalletConnect and Deep Links connection methods
+// This preserves all existing functionality while adding
+// WalletConnect compatibility for mobile users
+
+// These will be set by index.html when WalletConnect connects
+window.wcSigner = null;
+window.wcContract = null;
+window.isWcConnected = false;
+
+// Store original functions before overriding
+const _originalConnectWallet = window.connectWallet;
+const _originalPushTo = window.pushTo;
+const _originalPushForMe = window.pushForMe;
+
+// Enhanced connect function - tries WalletConnect first, then falls back to extension
+window.connectWallet = async function() {
+    // Try WalletConnect first if available
+    if (window.isWcConnected && window.wcSigner) {
+        console.log("✅ Using WalletConnect for connection");
+        return await window.wcSigner.getAddress();
+    }
+    // Fall back to original browser wallet connection
+    if (_originalConnectWallet) {
+        console.log("✅ Using browser extension for connection");
+        return await _originalConnectWallet();
+    }
+    throw new Error("No wallet available. Please connect via MetaMask or WalletConnect.");
+};
+
+// Enhanced pushTo - tries WalletConnect first, then falls back to extension
+window.pushTo = async function(receiver) {
+    // Try WalletConnect first if available
+    if (window.isWcConnected && window.wcContract) {
+        console.log("✅ Using WalletConnect for pushTo");
+        const tx = await window.wcContract.pushTo(receiver);
+        console.log("📝 TX HASH:", tx.hash);
+        return await tx.wait();
+    }
+    // Fall back to original browser wallet
+    if (_originalPushTo) {
+        console.log("✅ Using browser extension for pushTo");
+        return await _originalPushTo(receiver);
+    }
+    throw new Error("No wallet available. Please connect via MetaMask or WalletConnect.");
+};
+
+// Enhanced pushForMe - tries WalletConnect first, then falls back to extension
+window.pushForMe = async function() {
+    // Try WalletConnect first if available
+    if (window.isWcConnected && window.wcContract) {
+        console.log("✅ Using WalletConnect for pushForMe");
+        const tx = await window.wcContract.pushForMe();
+        console.log("📝 TX HASH:", tx.hash);
+        return await tx.wait();
+    }
+    // Fall back to original browser wallet
+    if (_originalPushForMe) {
+        console.log("✅ Using browser extension for pushForMe");
+        return await _originalPushForMe();
+    }
+    throw new Error("No wallet available. Please connect via MetaMask or WalletConnect.");
+};
+
+console.log('✅ WalletConnect support added to contract.js');
