@@ -14,9 +14,9 @@
         }
 
         .nav-links a {
-            margin: 0 12px;
+            margin: 0 10px;
             text-decoration: none;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
         }
 
@@ -24,8 +24,16 @@
             color: #facc15;
         }
 
+        .nav-links .history {
+            color: var(--brand-blue-soft);
+        }
+
         .nav-links .offers {
             color: var(--brand-green-bright);
+        }
+
+        .nav-links .legacy {
+            color: #a78bfa;
         }
 
         #history {
@@ -103,9 +111,15 @@
             </div>
         </div>
 
-        <div class="card" style="margin-bottom:3px">
+        <!-- NAV — same block & style as index.html -->
+        <div class="card nav-links" style="margin-bottom:1px">
+            <a href="index.html" class="wallet">Wallet</a>
+            <a href="history.html" class="history">History</a>
+            <a href="offers.html" class="offers">Offers</a>
+            <a href="legacy.html" class="legacy">Legacy</a>
+        </div>
 
-            <h2>Lookup Wallet</h2>
+        <div class="card" style="margin-bottom:3px">
 
             <input id="lookupAddress" placeholder="Paste wallet address 0x...">
 
@@ -154,15 +168,6 @@
                 </a>
             </p>
 
-        </div>
-
-        <div class="card nav-links" style="margin-bottom:3px">
-            <a href="index.html" class="wallet">
-                Wallet
-            </a>
-            <a href="offers.html" class="offers">
-                Offers
-            </a>
         </div>
 
         <div class="card">
