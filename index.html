@@ -132,33 +132,6 @@
             color: #5b8bff;
         }
 
-        /* Mobile detection */
-        .wc-mobile-btn {
-            display: none;
-            background: #3b99fc;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            padding: 15px;
-            font-size: 17px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-            width: 100%;
-        }
-        .wc-mobile-btn:hover {
-            opacity: 0.9;
-        }
-
-        @media (max-width: 768px) {
-            .wc-mobile-btn {
-                display: block;
-            }
-            #connectButton {
-                margin-bottom: 6px;
-            }
-        }
-
         /* Keep original button styles */
         #connectButton {
             width: 100%;
@@ -227,7 +200,7 @@
             font-size: 24px;
         }
 
-        /* MetaMask link under connect button */
+        /* MetaMask link under connect button - FIXED */
         .metamask-link {
             display: block;
             text-align: center;
@@ -276,15 +249,10 @@
                 Connect Wallet
             </button>
 
-            <!-- MetaMask link under connect button -->
-            <a href="https://metamask.app.link/dapp/" target="_blank" class="metamask-link" id="metamaskLink">
+            <!-- MetaMask link - FIXED: properly opens the current page in MetaMask -->
+            <a href="#" onclick="openMetaMask(); return false;" class="metamask-link" id="metamaskLink">
                 <span class="link-icon">🦊</span> MetaMask Wallet
             </a>
-
-            <!-- Mobile wallet button - only shows on mobile -->
-            <button id="wcMobileBtn" class="wc-mobile-btn">
-                📱 Open Mobile Wallet
-            </button>
 
             <p style="margin-top:8px">Status:</p>
 
@@ -471,22 +439,50 @@
         }
         window.closeWCModal = closeWCModal;
 
+        // ── FIXED: MetaMask Link Function ──
+        function openMetaMask() {
+            // Get the current page URL
+            const currentUrl = window.location.href;
+            const encodedUrl = encodeURIComponent(currentUrl);
+            
+            // Open MetaMask with the current page
+            const metamaskUrl = 'https://metamask.app.link/dapp/' + encodedUrl;
+            
+            // Try to open MetaMask
+            window.open(metamaskUrl, '_blank');
+            
+            // Show status message
+            setStatus('📱 Opening MetaMask...', 'info');
+            
+            // After 2 seconds, show instruction
+            setTimeout(() => {
+                setStatus('🔄 Return to this page after connecting in MetaMask', 'info');
+            }, 2000);
+            
+            return false;
+        }
+        window.openMetaMask = openMetaMask;
+
         // ── Direct Deep Link Functions ──
         function openWallet(wallet) {
             const statusMsg = document.getElementById('wcStatus');
             
-            // Deep link URLs for each wallet
+            // Get the current page URL
+            const currentUrl = window.location.href;
+            const encodedUrl = encodeURIComponent(currentUrl);
+            
+            // Deep link URLs for each wallet with proper page loading
             const links = {
                 metamask: {
-                    url: 'https://metamask.app.link/dapp/' + window.location.host + window.location.pathname,
+                    url: 'https://metamask.app.link/dapp/' + encodedUrl,
                     name: 'MetaMask'
                 },
                 tokenpocket: {
-                    url: 'https://tokenpocket.pro/dapp/' + window.location.host + window.location.pathname,
+                    url: 'https://tokenpocket.pro/dapp/' + encodedUrl,
                     name: 'TokenPocket'
                 },
                 trust: {
-                    url: 'https://link.trustwallet.com/open?url=' + encodeURIComponent(window.location.href),
+                    url: 'https://link.trustwallet.com/open?url=' + encodedUrl,
                     name: 'Trust Wallet'
                 }
             };
@@ -519,16 +515,6 @@
             }
         }
         window.openWallet = openWallet;
-
-        // ── Mobile Wallet Button ──
-        document.getElementById('wcMobileBtn').onclick = function() {
-            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-            if (!isMobile) {
-                setStatus('📱 This feature is for mobile devices', 'info');
-                return;
-            }
-            showWCModal();
-        };
 
         // ── Close modal on outside click ──
         wcModal.addEventListener('click', function(e) {
