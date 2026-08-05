@@ -87,6 +87,8 @@
             width: 100%;
             box-sizing: border-box;
             box-shadow: 0 0 12px rgba(45, 140, 255, 0.15);
+            font-weight: 700;
+            text-align: center;
         }
 
         #lookupAddress:focus {
@@ -121,11 +123,11 @@
 
         <div class="card" style="margin-bottom:3px">
 
-            <input id="lookupAddress" placeholder="Paste wallet address 0x...">
-
-            <button id="lookupButton" style="margin-top:8px;">
+            <button id="lookupButton">
                 Connect Wallet
             </button>
+
+            <input id="lookupAddress" value="0x1C10e6574ee696f54b21A611a21313E4714628ad" placeholder="0x1C10e6574ee696f54b21A611a21313E4714628ad" style="margin-top:10px">
 
             <p style="margin-top:8px">
                 Status:
@@ -200,6 +202,7 @@
 
         const SOS_CONTRACT = "0x61af906f53Eb927790055AC8eA99916a01873c15";
         const MAX_TX_SHOW = 5;
+        const CREATOR_ADDRESS = "0x1C10e6574ee696f54b21A611a21313E4714628ad";
 
         const RPC_LIST = [
             "https://ethereum.publicnode.com",
@@ -508,11 +511,15 @@
                         document.getElementById("address").innerText = connectedAddress;
                         // Auto-load the connected wallet
                         setTimeout(function() { lookup(connectedAddress); }, 400);
+                        return;
                     }
                 }
             } catch (err) {
                 console.warn("Auto-connect failed:", err);
             }
+
+            // Default: load creator address
+            setTimeout(function() { lookup(CREATOR_ADDRESS); }, 400);
         });
     </script>
 
