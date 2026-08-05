@@ -10,6 +10,20 @@
 
     <link rel="stylesheet" href="style.css">
 
+    <style>
+        .nav-links { text-align: center; margin: 6px 0; }
+        .nav-links a {
+            margin: 0 10px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .nav-links .wallet { color: #facc15; }
+        .nav-links .history { color: var(--brand-blue-soft); }
+        .nav-links .offers { color: var(--brand-green-bright); }
+        .nav-links .legacy { color: #a78bfa; }
+    </style>
+
 </head>
 
 <body>
@@ -24,6 +38,14 @@
                 <h1>SOS69069 Wallet</h1>
                 <p class="subtitle">Ethereum Mainnet</p>
             </div>
+        </div>
+
+        <!-- NAV — same block & style as legacy.html -->
+        <div class="card nav-links" style="margin-bottom:3px">
+            <a href="index.html" class="wallet">Wallet</a>
+            <a href="history.html" class="history">History</a>
+            <a href="offers.html" class="offers">Offers</a>
+            <a href="legacy.html" class="legacy">Legacy</a>
         </div>
 
         <div class="card" style="margin-bottom:3px">
@@ -109,16 +131,6 @@
             <button id="mintButton" disabled>
                 Push SOS To Address
             </button>
-
-            <p style="text-align:center;margin-top:12px">
-                <a href="history.html" style="color:var(--brand-blue-soft);margin:0 12px;text-decoration:none;font-size:20px;font-weight:700">
-                    History
-                </a>
-
-                <a href="offers.html" style="color:var(--brand-green-bright);margin:0 12px;text-decoration:none;font-size:20px;font-weight:700">
-                    Offers
-                </a>
-            </p>
 
         </div>
 
