@@ -40,7 +40,6 @@
     .success { color: var(--brand-green-bright); }
     .error { color: #ef4444; }
     .warn { color: #facc15; }
-    .info { color: #60a5fa; }
     .attempt-card {
       background: var(--bg);
       border: 1px solid var(--input-bg);
@@ -244,8 +243,6 @@
       let msg = err.message || String(err);
       if (msg.includes("Permission denied") || msg.includes("User denied") || msg.includes("rejected")) {
         msg = "Click Connect Wallet";
-      } else if (msg.includes("CALL_EXCEPTION") || msg.includes("missing revert data")) {
-        msg = "Contract read error - please refresh and try again";
       }
       setStatus(msg, "error");
     }
@@ -264,10 +261,6 @@
       $("totalSupply").innerText = supply.toString();
     } catch (err) {
       console.warn("Balance refresh failed:", err);
-      let msg = err.message || String(err);
-      if (msg.includes("CALL_EXCEPTION") || msg.includes("missing revert data")) {
-        setStatus("Unable to read contract - check your connection", "error");
-      }
     }
   }
 
@@ -304,11 +297,7 @@
       setStatus(walletAddress ? "Ready" : "Connect wallet to race", "success");
     } catch (err) {
       console.error(err);
-      let msg = err.message || String(err);
-      if (msg.includes("CALL_EXCEPTION") || msg.includes("missing revert data")) {
-        msg = "Unable to read contract - check your connection";
-      }
-      setStatus(msg, "error");
+      setStatus(err.message || String(err), "error");
     }
   };
 
@@ -609,11 +598,11 @@
         updatePushButtons();
       } catch (err) {
         console.warn("Auto-connect failed:", err);
-        if (err.message && (err.message.includes("Permission denied") || err.message.includes("User denied") || err.message.includes("rejected"))) {
-          setStatus("Click Connect Wallet", "error");
-        } else if (err.message && (err.message.includes("CALL_EXCEPTION") || err.message.includes("missing revert data"))) {
-          setStatus("Contract read error - refresh and try again", "error");
+        let msg = err.message || String(err);
+        if (msg.includes("Permission denied") || msg.includes("User denied") || msg.includes("rejected")) {
+          msg = "Click Connect Wallet";
         }
+        setStatus(msg, "error");
       }
     }, 600);
 
