@@ -242,7 +242,7 @@
     } catch (err) {
       console.error(err);
       let msg = err.message || String(err);
-      if (msg.includes("Permission denied") || msg.includes("User denied") || msg.includes("rejected")) {
+      if (msg.includes("ZPermission denied") || msg.includes("User denied") || msg.includes("rejected")) {
         msg = "Click Connect Wallet";
       } else if (msg.includes("CALL_EXCEPTION") || msg.includes("missing revert data")) {
         msg = "Contract read error - please refresh and try again";
