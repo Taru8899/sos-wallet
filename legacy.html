@@ -240,7 +240,12 @@
       updatePushButtons();
     } catch (err) {
       console.error(err);
-      setStatus(err.message || String(err), "error");
+      // Replace "Permission denied" with user-friendly message
+      let msg = err.message || String(err);
+      if (msg.includes("Permission denied") || msg.includes("User denied") || msg.includes("rejected")) {
+        msg = "Click Connect Wallet";
+      }
+      setStatus(msg, "error");
     }
   };
 
@@ -590,6 +595,10 @@
         updatePushButtons();
       } catch (err) {
         console.warn("Auto-connect failed:", err);
+        // Show user-friendly message if auto-connect fails
+        if (err.message && (err.message.includes("Permission denied") || err.message.includes("User denied") || err.message.includes("rejected"))) {
+          setStatus("Click Connect Wallet", "error");
+        }
       }
     }, 600);
 
