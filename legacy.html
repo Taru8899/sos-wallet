@@ -214,6 +214,7 @@
   let currentAttempt = null;
   let successionData = null;
   let unsubAttempts = null;
+  let isConnecting = false;
 
   const $ = (id) => document.getElementById(id);
 
@@ -228,10 +229,28 @@
     return a.slice(0, 6) + "…" + a.slice(-4);
   }
 
+  // ── Helper to ensure contract functions are available ──
+  function ensureContractFunctions() {
+    if (typeof getTrust !== 'function') {
+      console.error('Contract functions not loaded from contract.js');
+      setStatus('Error: Contract not loaded. Refresh the page.', 'error');
+      return false;
+    }
+    return true;
+  }
+
   // ── connect ──
   $("connectButton").onclick = async function () {
+    if (isConnecting) return;
     try {
+      isConnecting = true;
       setStatus("Connecting…");
+      
+      if (!ensureContractFunctions()) {
+        isConnecting = false;
+        return;
+      }
+      
       walletAddress = await connectWallet();
       $("address").innerText = walletAddress;
       await refreshMyBalance();
@@ -241,16 +260,20 @@
     } catch (err) {
       console.error(err);
       let msg = err.message || String(err);
-      if (msg.includes("Permission denied") || msg.includes("User denied") || msg.includes("rejected")) {
+      if (msg.includes("Permission denied") || msg.includes("User denied") || msg.includes("rejected") || msg.includes("already processing")) {
         msg = "Click Connect Wallet";
       }
       setStatus(msg, "error");
+    } finally {
+      isConnecting = false;
     }
   };
 
   async function refreshMyBalance() {
     if (!walletAddress) return;
     try {
+      if (!ensureContractFunctions()) return;
+      
       const trust = await getTrust(walletAddress);
       const push = await getPushCount(walletAddress);
       const supply = await getTotalSupply();
@@ -261,6 +284,12 @@
       $("totalSupply").innerText = supply.toString();
     } catch (err) {
       console.warn("Balance refresh failed:", err);
+      let msg = err.message || String(err);
+      if (msg.includes("Permission denied") || msg.includes("User denied") || msg.includes("rejected")) {
+        setStatus("Click Connect Wallet", "error");
+      } else {
+        setStatus("Balance read error: " + msg, "error");
+      }
     }
   }
 
@@ -272,6 +301,8 @@
       return;
     }
     try {
+      if (!ensureContractFunctions()) return;
+      
       oldAddr = ethers.getAddress(raw);
       $("oldAddress").value = oldAddr;
       setStatus("Loading old address…");
@@ -294,10 +325,14 @@
 
       $("startAttemptBtn").disabled = !walletAddress;
       updateTargetUI();
-      setStatus(walletAddress ? "Ready" : "Connect wallet to race", "success");
+      setStatus(walletAddress ? "Ready to race" : "Connect wallet to race", "success");
     } catch (err) {
       console.error(err);
-      setStatus(err.message || String(err), "error");
+      let msg = err.message || String(err);
+      if (msg.includes("Permission denied") || msg.includes("User denied") || msg.includes("rejected")) {
+        msg = "Click Connect Wallet";
+      }
+      setStatus(msg, "error");
     }
   };
 
@@ -395,13 +430,18 @@
 
   // ── start / resume attempt ──
   $("startAttemptBtn").onclick = async function () {
-    if (!walletAddress || !oldAddr) return;
+    if (!walletAddress || !oldAddr) {
+      setStatus("Connect wallet and load old address first", "error");
+      return;
+    }
     if (successionData && successionData.status === "claimed") {
       alert("This address is already claimed.");
       return;
     }
 
     try {
+      if (!ensureContractFunctions()) return;
+      
       const trust = await getTrust(oldAddr);
       const push = await getPushCount(oldAddr);
       oldEffective = BigInt(trust) - BigInt(push);
@@ -439,14 +479,18 @@
           status: "open"
         });
         currentAttempt = attempt;
-        setStatus("Attempt started", "success");
+        setStatus("Attempt started! Need " + target.toString() + " pushes.", "success");
       }
 
       updateTargetUI();
       updatePushButtons();
     } catch (err) {
       console.error(err);
-      setStatus(err.message || String(err), "error");
+      let msg = err.message || String(err);
+      if (msg.includes("Permission denied") || msg.includes("User denied") || msg.includes("rejected")) {
+        msg = "Click Connect Wallet";
+      }
+      setStatus(msg, "error");
     }
   };
 
@@ -474,11 +518,20 @@
       !(successionData && successionData.status === "claimed");
     $("doPushBtn").disabled = !can;
     $("doPush5Btn").disabled = !can;
+    
+    if (!can && walletAddress && oldAddr && !currentAttempt) {
+      // User hasn't started an attempt yet
+      $("doPushBtn").title = "Start an attempt first";
+      $("doPush5Btn").title = "Start an attempt first";
+    }
   }
 
   // ── perform pushForMe (1 or batch) ──
   async function doPushes(count) {
-    if (!currentAttempt || currentAttempt.status !== "open") return;
+    if (!currentAttempt || currentAttempt.status !== "open") {
+      setStatus("No active attempt. Click 'Start / Resume attempt' first.", "error");
+      return;
+    }
 
     $("doPushBtn").disabled = true;
     $("doPush5Btn").disabled = true;
@@ -491,6 +544,11 @@
           : "pushForMe " + i + " of " + count + "… confirm in wallet";
 
       try {
+        if (!ensureContractFunctions()) {
+          updatePushButtons();
+          return;
+        }
+        
         const liveOldPush = BigInt(await getPushCount(oldAddr));
         if (liveOldPush > BigInt(currentAttempt.oldPush)) {
           await markAttemptReset("Old address pushed — race reset");
@@ -526,23 +584,28 @@
 
         if (newProgress >= BigInt(currentAttempt.target)) {
           await markAttemptWon(receipt && receipt.hash);
-          $("pushProgress").innerText = "YOU WON THE SUCCESSION";
-          setStatus("Claim locked — you are the successor", "success");
+          $("pushProgress").innerText = "🏆 YOU WON THE SUCCESSION!";
+          setStatus("Claim locked — you are the successor!", "success");
           return;
         }
       } catch (err) {
         console.error(err);
-        $("pushProgress").innerText =
-          "Stopped after " + completed + " — " + (err.shortMessage || err.message);
-        setStatus(err.shortMessage || err.message, "error");
+        let msg = err.shortMessage || err.message;
+        if (msg.includes("denied") || msg.includes("rejected") || msg.includes("user rejected")) {
+          msg = "Transaction declined in wallet. Try again.";
+        } else if (msg.includes("Permission denied")) {
+          msg = "Click Connect Wallet";
+        }
+        $("pushProgress").innerText = "Stopped after " + completed + " — " + msg;
+        setStatus(msg, "error");
         updatePushButtons();
         return;
       }
     }
 
+    const stillNeeded = BigInt(currentAttempt.target) - BigInt(currentAttempt.progress);
     $("pushProgress").innerText =
-      completed + " pushForMe confirmed. Still need " +
-      (BigInt(currentAttempt.target) - BigInt(currentAttempt.progress)).toString();
+      completed + " pushForMe confirmed. Still need " + stillNeeded.toString();
     updatePushButtons();
   }
 
@@ -581,13 +644,25 @@
   $("doPushBtn").onclick = () => doPushes(1);
   $("doPush5Btn").onclick = () => doPushes(5);
 
-  // Auto-connect wallet + auto-fill from URL ?old=0x...
+  // ── Auto-connect wallet ──
   window.addEventListener("load", function () {
     setTimeout(async function () {
       try {
-        if (!window.ethereum) return;
+        if (!window.ethereum) {
+          setStatus("No wallet detected", "info");
+          return;
+        }
+        
+        if (!ensureContractFunctions()) {
+          setStatus("Contract loading... refresh if stuck", "info");
+          return;
+        }
+        
         const accounts = await window.ethereum.request({ method: "eth_accounts" });
-        if (!accounts || !accounts[0]) return;
+        if (!accounts || !accounts[0]) {
+          setStatus("Click Connect Wallet", "info");
+          return;
+        }
 
         setStatus("Connecting…");
         walletAddress = await connectWallet();
@@ -599,20 +674,40 @@
       } catch (err) {
         console.warn("Auto-connect failed:", err);
         let msg = err.message || String(err);
-        if (msg.includes("Permission denied") || msg.includes("User denied") || msg.includes("rejected")) {
+        if (msg.includes("Permission denied") || msg.includes("User denied") || msg.includes("rejected") || msg.includes("already processing")) {
           msg = "Click Connect Wallet";
+        } else if (msg.includes("CALL_EXCEPTION") || msg.includes("missing revert data")) {
+          msg = "Contract read error - refresh and try again";
         }
         setStatus(msg, "error");
       }
-    }, 600);
+    }, 800);
 
+    // Handle URL params for old address
     const params = new URLSearchParams(window.location.search);
     const o = params.get("old");
     if (o) {
       $("oldAddress").value = o;
-      setTimeout(() => $("loadOldBtn").click(), 800);
+      setTimeout(() => $("loadOldBtn").click(), 1000);
     }
   });
+
+  // ── Handle chain/account changes ──
+  if (window.ethereum) {
+    window.ethereum.on("chainChanged", () => {
+      window.location.reload();
+    });
+    window.ethereum.on("accountsChanged", (accounts) => {
+      if (accounts && accounts.length > 0) {
+        window.location.reload();
+      } else {
+        walletAddress = "";
+        $("address").innerText = "-";
+        setStatus("Disconnected - click Connect", "info");
+        updatePushButtons();
+      }
+    });
+  }
 })();
 </script>
 </body>
