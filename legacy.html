@@ -124,7 +124,8 @@
       </p>
       <p style="margin-top:8px">
         Trust: <span id="oldTrust">0</span> ·
-        Push: <span id="oldPush">0</span>
+        Push: <span id="oldPush">0</span> ·
+        Total Supply: <span id="oldTotalSupply">0</span>
       </p>
       <p id="claimStatus" class="muted small" style="margin-top:8px"></p>
     </div>
@@ -247,12 +248,12 @@
     if (!walletAddress) return;
     const trust = await getTrust(walletAddress);
     const push = await getPushCount(walletAddress);
-    const total = await getTotalSupply();
+    const supply = await getTotalSupply();
     myPush = BigInt(push);
     $("myTrust").innerText = trust.toString();
     $("myPush").innerText = push.toString();
     $("myEffective").innerText = (BigInt(trust) - BigInt(push)).toString();
-    $("totalSupply").innerText = total.toString();
+    $("totalSupply").innerText = supply.toString();
   }
 
   // ── load old address ──
@@ -269,12 +270,14 @@
 
       const trust = await getTrust(oldAddr);
       const push = await getPushCount(oldAddr);
+      const supply = await getTotalSupply();
       oldEffective = BigInt(trust) - BigInt(push);
       oldPush = BigInt(push);
 
       $("oldEffective").innerText = oldEffective.toString();
       $("oldTrust").innerText = trust.toString();
       $("oldPush").innerText = push.toString();
+      $("oldTotalSupply").innerText = supply.toString();
       $("oldData").style.display = "block";
       $("raceCard").style.display = "block";
 
