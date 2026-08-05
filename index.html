@@ -156,6 +156,32 @@
     <!-- UI -->
     <script src="app.js?v=5"></script>
 
+    <!-- Auto-connect (same behaviour as history.html) -->
+    <script>
+        window.addEventListener("load", async function () {
+            // Wait a moment for app.js + contract.js to finish loading
+            setTimeout(async function () {
+                try {
+                    if (!window.ethereum) return;
+
+                    const accounts = await window.ethereum.request({
+                        method: "eth_accounts"
+                    });
+
+                    if (accounts && accounts[0]) {
+                        // Trigger the same path as clicking Connect Wallet
+                        const btn = document.getElementById("connectButton");
+                        if (btn && !btn.disabled) {
+                            btn.click();
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Auto-connect failed:", err);
+                }
+            }, 500);
+        });
+    </script>
+
 </body>
 
 </html>
