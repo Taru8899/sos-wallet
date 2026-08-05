@@ -6,16 +6,18 @@
 <title>SOS69069 · Offers</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .nav-links { text-align: center; }
+  .nav-links { text-align: center; margin: 6px 0; }
   .nav-links a {
-    color: var(--brand-blue-soft);
-    margin: 0 16px;
+    margin: 0 10px;
     text-decoration: none;
-    font-size: 20px;
-    font-weight: 800;
+    font-size: 18px;
+    font-weight: 700;
   }
-  .nav-links a.wallet { color: #facc15; }
-  .nav-links a.history { color: var(--brand-blue-soft); }
+  .nav-links .wallet { color: #facc15; }
+  .nav-links .history { color: var(--brand-blue-soft); }
+  .nav-links .offers { color: var(--brand-green-bright); }
+  .nav-links .legacy { color: #a78bfa; }
+
   label {
     display: block;
     margin-top: 12px;
@@ -158,8 +160,16 @@
   </div>
 </div>
 
+<!-- NAV — same block & style as index.html -->
+<div class="card nav-links" style="margin-bottom:1px">
+  <a href="index.html" class="wallet">Wallet</a>
+  <a href="history.html" class="history">History</a>
+  <a href="offers.html" class="offers">Offers</a>
+  <a href="legacy.html" class="legacy">Legacy</a>
+</div>
+
 <!-- ===== CONNECT WALLET ===== -->
-<div class="card">
+<div class="card" style="margin-bottom:3px">
   <button id="connectButton">Connect Wallet</button>
   <div class="status-section">
     <p>Status:</p>
@@ -171,18 +181,23 @@
   </div>
 </div>
 
-<!-- ===== YOUR SOS BALANCE ===== -->
-<div class="card">
+<!-- ===== YOUR SOS BALANCE — same style as index.html ===== -->
+<div class="card" style="margin-bottom:3px">
   <h2>Your SOS Balance</h2>
-  <p>Effective: <span id="effective" class="effective-blue">0</span></p>
-  <p>Trust: <span id="trust">0</span></p>
-  <p>Push: <span id="push">0</span></p>
-  <p class="muted small" id="effectiveHint" style="display:none;color:#fca5a5"></p>
-  <p>Total Supply: <span id="totalSupply">0</span></p>
+  <p style="font-size:1.2rem; font-weight:700;">
+    Effective:
+    <span id="effective" style="color:var(--brand-blue-soft);">0</span>
+  </p>
+  <p id="effectiveHint" class="muted small" style="display:none;color:#fca5a5;margin-top:6px"></p>
+  <p style="margin-top:8px">
+    Trust: <span id="trust">0</span> ·
+    Push: <span id="push">0</span> ·
+    Total Supply: <span id="totalSupply">0</span>
+  </p>
 </div>
 
-<!-- ===== SOS MARKET PRICE OVERVIEW (moved here) ===== -->
-<div class="card" id="marketCard">
+<!-- ===== SOS MARKET PRICE OVERVIEW ===== -->
+<div class="card" id="marketCard" style="margin-bottom:3px">
   <h2>SOS Market Price Overview</h2>
   <div class="market-price-line">
     Buy price (max): <span class="price-value" id="midBuy">—</span>
@@ -191,12 +206,6 @@
     Sell price (max): <span class="price-value" id="midSell">—</span>
   </div>
   <p class="muted small" id="midMeta" style="margin-top:8px;display:none;">No priced offers yet</p>
-</div>
-
-<!-- ===== NAV LINKS ===== -->
-<div class="card nav-links" style="margin-bottom:3px;">
-  <a href="index.html" class="wallet">Wallet</a>
-  <a href="history.html" class="history">History</a>
 </div>
 
 <!-- ===== BROWSE OFFERS ===== -->
