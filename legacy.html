@@ -40,6 +40,7 @@
     .success { color: var(--brand-green-bright); }
     .error { color: #ef4444; }
     .warn { color: #facc15; }
+    .info { color: #60a5fa; }
     .attempt-card {
       background: var(--bg);
       border: 1px solid var(--input-bg);
@@ -69,7 +70,7 @@
 <body>
 <div class="container">
 
-  <!-- HEADER — identical to index.html -->
+  <!-- HEADER -->
   <div class="header-row">
     <a href="index.html">
       <img src="logo.webp" alt="SOS69069" class="logo-badge">
@@ -97,7 +98,7 @@
     <div id="address">-</div>
   </div>
 
-  <!-- SOS BALANCE — same style as index.html -->
+  <!-- SOS BALANCE -->
   <div class="card" style="margin-bottom:3px">
     <h2>SOS Balance</h2>
     <p style="font-size:1.2rem;font-weight:700">
@@ -111,11 +112,11 @@
     </p>
   </div>
 
-  <!-- OLD ADDRESS INPUT (heading removed) -->
+  <!-- OLD ADDRESS INPUT -->
   <div class="card" style="margin-bottom:3px">
     <input id="oldAddress" placeholder="0x… paste the address you want to succeed">
     <button id="loadOldBtn" style="margin-top:8px;background:var(--brand-green)">
-      Connect Wallet
+      Load Address
     </button>
     <div id="oldData" style="margin-top:12px;display:none">
       <p style="font-size:1.2rem;font-weight:700">
@@ -240,10 +241,11 @@
       updatePushButtons();
     } catch (err) {
       console.error(err);
-      // Replace "Permission denied" with user-friendly message
       let msg = err.message || String(err);
       if (msg.includes("Permission denied") || msg.includes("User denied") || msg.includes("rejected")) {
         msg = "Click Connect Wallet";
+      } else if (msg.includes("CALL_EXCEPTION") || msg.includes("missing revert data")) {
+        msg = "Contract read error - please refresh and try again";
       }
       setStatus(msg, "error");
     }
@@ -251,14 +253,22 @@
 
   async function refreshMyBalance() {
     if (!walletAddress) return;
-    const trust = await getTrust(walletAddress);
-    const push = await getPushCount(walletAddress);
-    const supply = await getTotalSupply();
-    myPush = BigInt(push);
-    $("myTrust").innerText = trust.toString();
-    $("myPush").innerText = push.toString();
-    $("myEffective").innerText = (BigInt(trust) - BigInt(push)).toString();
-    $("totalSupply").innerText = supply.toString();
+    try {
+      const trust = await getTrust(walletAddress);
+      const push = await getPushCount(walletAddress);
+      const supply = await getTotalSupply();
+      myPush = BigInt(push);
+      $("myTrust").innerText = trust.toString();
+      $("myPush").innerText = push.toString();
+      $("myEffective").innerText = (BigInt(trust) - BigInt(push)).toString();
+      $("totalSupply").innerText = supply.toString();
+    } catch (err) {
+      console.warn("Balance refresh failed:", err);
+      let msg = err.message || String(err);
+      if (msg.includes("CALL_EXCEPTION") || msg.includes("missing revert data")) {
+        setStatus("Unable to read contract - check your connection", "error");
+      }
+    }
   }
 
   // ── load old address ──
@@ -294,7 +304,11 @@
       setStatus(walletAddress ? "Ready" : "Connect wallet to race", "success");
     } catch (err) {
       console.error(err);
-      setStatus(err.message || String(err), "error");
+      let msg = err.message || String(err);
+      if (msg.includes("CALL_EXCEPTION") || msg.includes("missing revert data")) {
+        msg = "Unable to read contract - check your connection";
+      }
+      setStatus(msg, "error");
     }
   };
 
@@ -595,9 +609,10 @@
         updatePushButtons();
       } catch (err) {
         console.warn("Auto-connect failed:", err);
-        // Show user-friendly message if auto-connect fails
         if (err.message && (err.message.includes("Permission denied") || err.message.includes("User denied") || err.message.includes("rejected"))) {
           setStatus("Click Connect Wallet", "error");
+        } else if (err.message && (err.message.includes("CALL_EXCEPTION") || err.message.includes("missing revert data"))) {
+          setStatus("Contract read error - refresh and try again", "error");
         }
       }
     }, 600);
