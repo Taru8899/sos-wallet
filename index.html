@@ -23,7 +23,7 @@
         .nav-links .offers { color: var(--brand-green-bright); }
         .nav-links .legacy { color: #a78bfa; }
 
-        /* WalletConnect QR Modal - only shows on mobile */
+        /* Mobile Wallet Modal */
         #wcModal {
             display: none;
             position: fixed;
@@ -62,57 +62,43 @@
             font-size: 14px;
             margin-bottom: 16px;
         }
-        #wcModal .qr-wrapper {
-            background: white;
-            padding: 12px;
-            border-radius: 12px;
-            display: inline-block;
-            margin: 0 auto 12px;
-        }
-        #wcModal .qr-wrapper img {
-            max-width: 200px;
-            border-radius: 4px;
-            display: block;
-        }
-        #wcModal .wc-uri-box {
-            font-size: 11px;
-            word-break: break-all;
-            color: #9ca3af;
-            background: #1a1a2e;
-            padding: 10px;
-            border-radius: 6px;
-            margin: 10px 0;
-            border: 1px solid #2d2d4a;
-        }
-        #wcModal .wc-uri-box label {
-            display: block;
-            font-weight: 700;
-            color: #5b8bff;
-            font-size: 12px;
-            margin-bottom: 4px;
-        }
         #wcModal .deep-links {
             display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin: 12px 0;
-            justify-content: center;
+            flex-direction: column;
+            gap: 10px;
+            margin: 16px 0;
         }
         #wcModal .deep-links button {
-            width: auto;
-            padding: 10px 16px;
-            font-size: 13px;
-            border-radius: 8px;
+            width: 100%;
+            padding: 14px 20px;
+            font-size: 16px;
+            border-radius: 12px;
             border: none;
             cursor: pointer;
             color: white;
             font-weight: 700;
-            flex: 1;
-            min-width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
         }
-        .btn-deep-metamask { background: #f6851b; }
-        .btn-deep-tokenpocket { background: #2980fe; }
-        .btn-deep-trust { background: #3375bb; }
+        #wcModal .deep-links button:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+        #wcModal .deep-links button:active {
+            transform: scale(0.98);
+        }
+        .btn-deep-metamask { 
+            background: #f6851b; 
+        }
+        .btn-deep-tokenpocket { 
+            background: #2980fe; 
+        }
+        .btn-deep-trust { 
+            background: #3375bb; 
+        }
         .btn-cancel-wc {
             background: #4b5563;
             margin-top: 10px;
@@ -132,6 +118,9 @@
             font-size: 14px;
             margin: 8px 0;
             font-weight: 700;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
         }
         .wc-status.error {
             color: #ef4444;
@@ -139,8 +128,11 @@
         .wc-status.success {
             color: #22c55e;
         }
+        .wc-status.info {
+            color: #5b8bff;
+        }
 
-        /* Mobile detection - show WalletConnect button only on mobile */
+        /* Mobile detection */
         .wc-mobile-btn {
             display: none;
             background: #3b99fc;
@@ -230,6 +222,10 @@
             font-size: 13px;
             margin-top: 6px;
         }
+
+        .wallet-icon {
+            font-size: 24px;
+        }
     </style>
 
 </head>
@@ -262,9 +258,9 @@
                 Connect Wallet
             </button>
 
-            <!-- WalletConnect button - only shows on mobile -->
+            <!-- Mobile wallet button - only shows on mobile -->
             <button id="wcMobileBtn" class="wc-mobile-btn">
-                📱 Connect with Mobile Wallet
+                📱 Open Mobile Wallet
             </button>
 
             <p style="margin-top:8px">Status:</p>
@@ -358,27 +354,31 @@
 
     </div>
 
-    <!-- WalletConnect Modal -->
+    <!-- Mobile Wallet Modal - Direct Deep Links -->
     <div id="wcModal">
         <div class="modal-content">
-            <h3>📱 Connect Mobile Wallet</h3>
-            <p>Scan this QR code with your mobile wallet app</p>
+            <h3>📱 Open Your Mobile Wallet</h3>
+            <p>Choose your wallet to connect</p>
 
-            <div class="qr-wrapper" id="qrWrapper">
-                <div id="qrDisplay" style="color:#9ca3af;padding:20px;">⏳ Loading QR code...</div>
-            </div>
-
-            <div class="wc-status" id="wcStatus">⏳ Waiting for connection...</div>
+            <div class="wc-status info" id="wcStatus">💡 Your wallet app will open automatically</div>
 
             <div class="deep-links">
-                <button class="btn-deep-metamask" onclick="openDeepLink('metamask')">🦊 MetaMask</button>
-                <button class="btn-deep-tokenpocket" onclick="openDeepLink('tokenpocket')">🔷 TokenPocket</button>
-                <button class="btn-deep-trust" onclick="openDeepLink('trust')">🟣 Trust</button>
+                <button class="btn-deep-metamask" onclick="openWallet('metamask')">
+                    <span class="wallet-icon">🦊</span> MetaMask
+                </button>
+                <button class="btn-deep-tokenpocket" onclick="openWallet('tokenpocket')">
+                    <span class="wallet-icon">🔷</span> TokenPocket
+                </button>
+                <button class="btn-deep-trust" onclick="openWallet('trust')">
+                    <span class="wallet-icon">🟣</span> Trust Wallet
+                </button>
             </div>
 
-            <div class="wc-uri-box">
-                <label>📋 WalletConnect URI</label>
-                <div id="wcUriDisplay">Waiting for connection...</div>
+            <div style="margin-top:12px;padding:12px;background:#1a1a2e;border-radius:8px;border:1px solid #2d2d4a;">
+                <p style="color:#9ca3af;font-size:13px;margin:0;">
+                    ⚡ After connecting, return to this page.<br>
+                    <span style="color:#5b8bff;font-weight:700;">Make sure you're on Ethereum Mainnet</span>
+                </p>
             </div>
 
             <button class="btn-cancel-wc" onclick="closeWCModal()">✕ Cancel</button>
@@ -392,42 +392,6 @@
         console.log("✅ ethers.js loaded");
     </script>
 
-    <!-- WalletConnect Library - load with proper error handling -->
-    <script>
-        // Load WalletConnect library dynamically
-        function loadWalletConnect() {
-            return new Promise((resolve, reject) => {
-                // Check if already loaded
-                if (typeof WalletConnect !== 'undefined') {
-                    resolve();
-                    return;
-                }
-
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/@walletconnect/web3wallet@1.12.0/dist/standalone.js';
-                script.onload = function() {
-                    console.log('✅ WalletConnect library loaded');
-                    resolve();
-                };
-                script.onerror = function() {
-                    reject(new Error('Failed to load WalletConnect library'));
-                };
-                document.head.appendChild(script);
-
-                // Timeout after 10 seconds
-                setTimeout(() => {
-                    if (typeof WalletConnect === 'undefined') {
-                        reject(new Error('WalletConnect library load timeout'));
-                    }
-                }, 10000);
-            });
-        }
-
-        // Store the load function globally
-        window.loadWalletConnect = loadWalletConnect;
-        console.log("✅ WalletConnect loader ready");
-    </script>
-
     <!-- SOS contract -->
     <script src="contract.js?v=6"></script>
 
@@ -435,26 +399,15 @@
     <script src="app.js?v=6"></script>
 
     <!-- ============================================================ -->
-    <!-- WALLETCONNECT IMPLEMENTATION                                   -->
+    <!-- DIRECT DEEP LINKS - No WalletConnect Library Required         -->
     <!-- ============================================================ -->
     <script>
-        // ── WalletConnect Configuration ──
-        const WC_PROJECT_ID = 'e2ed317a32677cb51ccdb6b3ba0ec2b0';
-
-        let wcSigner = null;
-        let wcContract = null;
-        let isWcConnected = false;
-        let wcSession = null;
-        let wcTimeout = null;
-
         // ── DOM References ──
         const statusEl = document.getElementById('status');
         const addressEl = document.getElementById('address');
         const methodBadge = document.getElementById('methodBadge');
         const wcModal = document.getElementById('wcModal');
-        const qrDisplay = document.getElementById('qrDisplay');
         const wcStatus = document.getElementById('wcStatus');
-        const wcUriDisplay = document.getElementById('wcUriDisplay');
 
         // ── Helper Functions ──
         function setStatus(text, type) {
@@ -477,7 +430,7 @@
             if (method === 'extension') {
                 badgeHtml = '<span class="method-badge badge-extension">🦊 Extension</span>';
             } else if (method === 'walletconnect') {
-                badgeHtml = '<span class="method-badge badge-walletconnect">📱 WalletConnect</span>';
+                badgeHtml = '<span class="method-badge badge-walletconnect">📱 Mobile</span>';
             }
             addressEl.innerHTML = addrText + ' ' + badgeHtml;
         }
@@ -485,240 +438,80 @@
         function showWCModal() {
             wcModal.classList.add('active');
             document.body.style.overflow = 'hidden';
+            wcStatus.innerText = '💡 Your wallet app will open automatically';
+            wcStatus.className = 'wc-status info';
         }
 
         function closeWCModal() {
             wcModal.classList.remove('active');
             document.body.style.overflow = '';
-            if (wcTimeout) {
-                clearTimeout(wcTimeout);
-                wcTimeout = null;
-            }
         }
         window.closeWCModal = closeWCModal;
 
-        // ── Deep Link Functions ──
-        function openDeepLink(wallet) {
-            const uri = wcUriDisplay.innerText;
-            if (!uri || uri === 'Waiting for connection...' || uri === '⏳ Generating connection...') {
-                alert('Please wait for the WalletConnect URI to generate');
+        // ── Direct Deep Link Functions ──
+        function openWallet(wallet) {
+            const statusMsg = document.getElementById('wcStatus');
+            
+            // Deep link URLs for each wallet
+            // These open the wallet app directly on mobile
+            const links = {
+                metamask: {
+                    url: 'https://metamask.app.link/dapp/' + window.location.host + window.location.pathname,
+                    name: 'MetaMask'
+                },
+                tokenpocket: {
+                    url: 'https://tokenpocket.pro/dapp/' + window.location.host + window.location.pathname,
+                    name: 'TokenPocket'
+                },
+                trust: {
+                    url: 'https://link.trustwallet.com/open?url=' + encodeURIComponent(window.location.href),
+                    name: 'Trust Wallet'
+                }
+            };
+
+            const walletData = links[wallet];
+            if (!walletData) {
+                statusMsg.innerText = '❌ Unknown wallet selected';
+                statusMsg.className = 'wc-status error';
                 return;
             }
 
-            const encodedUri = encodeURIComponent(uri);
-            const links = {
-                metamask: 'https://metamask.app.link/wc?uri=' + encodedUri,
-                tokenpocket: 'https://tokenpocket.pro/wc?uri=' + encodedUri,
-                trust: 'https://link.trustwallet.com/wc?uri=' + encodedUri
-            };
+            statusMsg.innerText = '⏳ Opening ' + walletData.name + '...';
+            statusMsg.className = 'wc-status info';
 
-            const url = links[wallet];
-            if (url) {
-                window.open(url, '_blank');
-            }
-        }
-        window.openDeepLink = openDeepLink;
-
-        // ── WalletConnect Connection ──
-        async function connectWithWalletConnect() {
+            // Try to open the wallet
             try {
-                if (isWcConnected) {
-                    setStatus('Already connected via WalletConnect', 'connected');
-                    return;
-                }
-
-                setStatus('Connecting via WalletConnect...', 'warning');
-                showWCModal();
-                wcStatus.innerText = '⏳ Loading WalletConnect...';
-                wcStatus.className = 'wc-status';
-
-                // Load WalletConnect library if not already loaded
-                if (typeof WalletConnect === 'undefined') {
-                    try {
-                        await window.loadWalletConnect();
-                    } catch (loadErr) {
-                        wcStatus.innerText = '❌ ' + loadErr.message;
-                        wcStatus.className = 'wc-status error';
-                        setStatus('Failed to load WalletConnect library', 'error');
-                        return;
-                    }
-                }
-
-                // Double check if loaded
-                if (typeof WalletConnect === 'undefined') {
-                    wcStatus.innerText = '❌ WalletConnect library not available';
-                    wcStatus.className = 'wc-status error';
-                    setStatus('WalletConnect library not available. Please refresh.', 'error');
-                    return;
-                }
-
-                wcStatus.innerText = '⏳ Initializing connection...';
-
-                const metadata = {
-                    name: "SOS69069",
-                    description: "SOS69069 Wallet",
-                    url: window.location.origin,
-                    icons: ["https://avatars.githubusercontent.com/u/37784886"]
-                };
-
-                // Initialize Web3Wallet
-                const web3wallet = await WalletConnect.Web3Wallet.init({
-                    projectId: WC_PROJECT_ID,
-                    metadata: metadata,
-                });
-
-                // Create a new pairing
-                const pairing = await web3wallet.core.pairing.create();
-                const uri = pairing.uri;
-                console.log("WalletConnect URI:", uri);
-
-                // Display URI
-                wcUriDisplay.innerText = uri;
-
-                // Generate QR Code
-                qrDisplay.innerHTML = `
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(uri)}" 
-                         alt="QR Code" 
-                         style="max-width:220px;border-radius:4px;"
-                         onerror="this.style.display='none';this.parentElement.innerHTML='<p style=\\'color:#9ca3af;\\'>QR code generation failed. Use the deep link buttons below.</p>'">
-                `;
-
-                wcStatus.innerText = '📱 Scan with your mobile wallet';
-                wcStatus.className = 'wc-status';
-                setStatus('Waiting for wallet connection...', 'warning');
-
-                // Set timeout
-                if (wcTimeout) clearTimeout(wcTimeout);
-                wcTimeout = setTimeout(() => {
-                    if (!isWcConnected) {
-                        wcStatus.innerText = '⏰ Connection timeout. Try again.';
-                        wcStatus.className = 'wc-status error';
-                        setStatus('Connection timeout. Try again.', 'error');
-                    }
-                }, 120000);
-
-                // Wait for connection
-                wcSession = await web3wallet.connect({
-                    pairing: pairing,
-                    requiredNamespaces: {
-                        eip155: {
-                            chains: ["eip155:1"],
-                            methods: [
-                                "eth_sendTransaction",
-                                "eth_sign",
-                                "eth_signTransaction",
-                                "eth_signTypedData",
-                                "eth_signTypedData_v4",
-                                "personal_sign",
-                                "eth_accounts"
-                            ],
-                            events: ["chainChanged", "accountsChanged"],
-                            accounts: []
-                        }
-                    }
-                });
-
-                console.log("WalletConnect session:", wcSession);
-
-                // Get accounts
-                const accounts = wcSession.namespaces.eip155.accounts;
-                if (!accounts || accounts.length === 0) {
-                    throw new Error("No accounts connected");
-                }
-
-                // Extract address
-                const address = accounts[0].split(":")[2];
-                console.log("Connected address:", address);
-
-                // Create ethers provider
-                const wcProvider = new ethers.BrowserProvider(web3wallet);
-                wcSigner = await wcProvider.getSigner();
-
-                // Create contract instance
-                wcContract = new ethers.Contract(SOS_CONTRACT, SOS_ABI, wcSigner);
-                isWcConnected = true;
-
-                // Store globally for contract.js
-                window.wcSigner = wcSigner;
-                window.wcContract = wcContract;
-                window.isWcConnected = true;
-
-                // Store wallet address
-                walletAddress = address;
-                window.walletAddress = address;
-
-                // Update UI
-                setAddress(address, 'walletconnect');
-                setStatus('Connected via WalletConnect!', 'connected');
-                wcStatus.innerText = '✅ Connected!';
-                wcStatus.className = 'wc-status success';
-
-                // Load balance
-                if (typeof refreshWallet === 'function') {
-                    await refreshWallet();
-                } else if (typeof loadWalletData === 'function') {
-                    await loadWalletData(address);
-                }
-
-                // Enable mint button
-                const mintBtn = document.getElementById('mintButton');
-                if (mintBtn) {
-                    mintBtn.disabled = false;
-                    mintBtn.innerText = 'Push SOS To Address';
-                }
-
-                // Update receiver field
-                const receiverInput = document.getElementById('receiver');
-                if (receiverInput) {
-                    receiverInput.value = "0x1C10e6574ee696f54b21A611a21313E4714628ad";
-                }
-
-                // Close modal after delay
+                // Open the deep link
+                window.open(walletData.url, '_blank');
+                
+                statusMsg.innerText = '✅ ' + walletData.name + ' opened! Return to this page after connecting.';
+                statusMsg.className = 'wc-status success';
+                
+                // Close modal after 3 seconds
                 setTimeout(() => {
                     closeWCModal();
-                }, 2000);
-
-                // Override mint functions for WalletConnect
-                window.pushForMe = async function() {
-                    if (!wcContract || !isWcConnected) {
-                        throw new Error("WalletConnect not connected");
-                    }
-                    console.log("🔨 Minting via WalletConnect...");
-                    const tx = await wcContract.pushForMe();
-                    console.log("📝 TX HASH:", tx.hash);
-                    return await tx.wait();
-                };
-
-                window.pushTo = async function(receiver) {
-                    if (!wcContract || !isWcConnected) {
-                        throw new Error("WalletConnect not connected");
-                    }
-                    console.log("🔨 Minting to:", receiver, "via WalletConnect");
-                    const tx = await wcContract.pushTo(receiver);
-                    console.log("📝 TX HASH:", tx.hash);
-                    return await tx.wait();
-                };
-
-                if (wcTimeout) {
-                    clearTimeout(wcTimeout);
-                    wcTimeout = null;
-                }
-
+                }, 3000);
+                
+                // Show instruction to return
+                setStatus('📱 Wallet opened - return here after connecting', 'info');
             } catch (err) {
-                console.error("WalletConnect error:", err);
-                const errorMsg = err.message || String(err);
-                wcStatus.innerText = '❌ ' + errorMsg;
-                wcStatus.className = 'wc-status error';
-                setStatus('❌ ' + errorMsg, 'error');
-                if (wcTimeout) {
-                    clearTimeout(wcTimeout);
-                    wcTimeout = null;
-                }
+                console.error('Failed to open wallet:', err);
+                statusMsg.innerText = '❌ Could not open ' + walletData.name + '. Please open the app manually.';
+                statusMsg.className = 'wc-status error';
             }
         }
+        window.openWallet = openWallet;
 
-        // ── Mobile WalletConnect Button ──
-        document.getElementById('wcMobileBtn').onclick = connectWithWalletConnect;
+        // ── Mobile Wallet Button ──
+        document.getElementById('wcMobileBtn').onclick = function() {
+            // Check if we're on mobile
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            if (!isMobile) {
+                setStatus('📱 This feature is for mobile devices', 'info');
+                return;
+            }
+            showWCModal();
+        };
 
         // ── Close modal on outside click ──
         wcModal.addEventListener('click', function(e) {
@@ -727,74 +520,55 @@
             }
         });
 
-        // ── Override connectWallet to support WalletConnect ──
-        const originalConnectWallet = window.connectWallet;
-        window.connectWallet = async function() {
-            // If we have WalletConnect, use it
-            if (isWcConnected && wcSigner) {
-                return await wcSigner.getAddress();
+        // ── Detect if wallet is already connected via deep link ──
+        // When user returns from wallet, we try to auto-connect
+        window.addEventListener('focus', async function() {
+            // Check if we have a wallet connected
+            if (window.ethereum) {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    if (accounts && accounts[0]) {
+                        // Already connected
+                        return;
+                    }
+                } catch (e) {
+                    // Not connected
+                }
             }
-            // Otherwise use original
-            if (originalConnectWallet) {
-                return await originalConnectWallet();
+            
+            // If we're on mobile and we have a saved connection attempt
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            if (isMobile && window.ethereum) {
+                // Try to connect automatically after returning from wallet
+                try {
+                    setStatus('🔄 Reconnecting...', 'warning');
+                    const addr = await connectWallet();
+                    if (addr) {
+                        walletAddress = addr;
+                        setAddress(addr, 'walletconnect');
+                        setStatus('✅ Connected via Mobile Wallet!', 'connected');
+                        if (typeof refreshWallet === 'function') {
+                            await refreshWallet();
+                        }
+                        const mintBtn = document.getElementById('mintButton');
+                        if (mintBtn) mintBtn.disabled = false;
+                    }
+                } catch (err) {
+                    console.log('Auto-reconnect not available');
+                }
             }
-            throw new Error("No wallet available");
-        };
+        });
 
-        // ── Override push functions to use WalletConnect ──
-        const originalPushForMe = window.pushForMe;
-        window.pushForMe = async function() {
-            if (isWcConnected && wcContract) {
-                console.log("Using WalletConnect for pushForMe");
-                const tx = await wcContract.pushForMe();
-                console.log("TX HASH:", tx.hash);
-                return await tx.wait();
-            }
-            if (originalPushForMe) {
-                return await originalPushForMe();
-            }
-            throw new Error("No wallet available");
-        };
-
-        const originalPushTo = window.pushTo;
-        window.pushTo = async function(receiver) {
-            if (isWcConnected && wcContract) {
-                console.log("Using WalletConnect for pushTo");
-                const tx = await wcContract.pushTo(receiver);
-                console.log("TX HASH:", tx.hash);
-                return await tx.wait();
-            }
-            if (originalPushTo) {
-                return await originalPushTo();
-            }
-            throw new Error("No wallet available");
-        };
-
-        console.log("✅ WalletConnect support loaded with Project ID:", WC_PROJECT_ID);
+        console.log("✅ Direct Deep Links loaded (MetaMask, TokenPocket, Trust Wallet)");
     </script>
 
-    <!-- Auto-connect — same behaviour as history.html + WalletConnect support -->
+    <!-- Auto-connect — same behaviour as history.html -->
     <script>
         window.addEventListener("load", function() {
             // Give app.js + contract.js time to define connectWallet / refreshWallet
             setTimeout(async function() {
                 try {
-                    // Check for WalletConnect session first
-                    if (window.isWcConnected && window.walletAddress) {
-                        setAddress(window.walletAddress, 'walletconnect');
-                        setStatus('Connected via WalletConnect!', 'connected');
-                        if (typeof refreshWallet === 'function') {
-                            await refreshWallet();
-                        }
-                        const mintBtn = document.getElementById('mintButton');
-                        if (mintBtn) {
-                            mintBtn.disabled = false;
-                            mintBtn.innerText = 'Push SOS To Address';
-                        }
-                        return;
-                    }
-
-                    // Check for MetaMask/Extension
+                    // Check for MetaMask/Extension first
                     if (window.ethereum) {
                         // eth_accounts returns already-authorized accounts without a popup
                         const accounts = await window.ethereum.request({
