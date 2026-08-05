@@ -365,5 +365,69 @@
   })();
 </script>
 
+<!-- Auto-connect — same behaviour as index.html / history.html -->
+<script>
+  window.addEventListener("load", function () {
+    // Give contract.js + offers.js time to finish loading
+    setTimeout(async function () {
+      try {
+        if (!window.ethereum) return;
+
+        // eth_accounts returns already-authorized accounts without a popup
+        const accounts = await window.ethereum.request({
+          method: "eth_accounts"
+        });
+
+        if (!accounts || !accounts[0]) return;
+
+        document.getElementById("status").innerText = "Connecting…";
+
+        // connectWallet() is defined in contract.js
+        const addr = await connectWallet();
+
+        document.getElementById("address").innerText = addr;
+
+        // Refresh balances if the function exists in offers.js
+        if (typeof refreshWallet === "function") {
+          await refreshWallet();
+        } else if (typeof getTrust === "function" && typeof getPushCount === "function") {
+          // Fallback: load balances directly
+          const trust = await getTrust(addr);
+          const push = await getPushCount(addr);
+          const total = typeof getTotalSupply === "function" ? await getTotalSupply() : 0n;
+          const effective = BigInt(trust) - BigInt(push);
+
+          document.getElementById("effective").innerText = effective.toString();
+          document.getElementById("trust").innerText = trust.toString();
+          document.getElementById("push").innerText = push.toString();
+          document.getElementById("totalSupply").innerText = total.toString();
+
+          // Show negative-Effective warning
+          const hint = document.getElementById("effectiveHint");
+          if (hint) {
+            if (effective < 0n) {
+              hint.style.display = "block";
+              hint.innerText = "Your Effective balance is " + effective.toString() +
+                " — selling is blocked. Buy mints to raise it above zero.";
+            } else {
+              hint.style.display = "none";
+              hint.innerText = "";
+            }
+          }
+        }
+
+        // Enable the post button if it exists
+        const signBtn = document.getElementById("signOfferBtn");
+        if (signBtn) signBtn.disabled = false;
+
+        document.getElementById("status").innerText = "Connected";
+      } catch (err) {
+        console.warn("Auto-connect failed:", err);
+        // Leave status as Ready — user can still click the button
+      }
+    }, 600);
+  });
+</script>
+
 </body>
 </html>
