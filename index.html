@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SOS69069 Wallet</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .nav-links { text-align: center; margin: 6px 0; }
+        .nav-links a {
+            margin: 0 10px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .nav-links .wallet { color: #facc15; }
+        .nav-links .history { color: var(--brand-blue-soft); }
+        .nav-links .offers { color: var(--brand-green-bright); }
+        .nav-links .legacy { color: #a78bfa; }
+
+        /* New styles for connection methods */
+        .connection-methods {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .connection-methods button {
+            flex: 1;
+            min-width: 80px;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            transition: all 0.2s;
+        }
+        .connection-methods button:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+        .btn-metamask {
+            background: #f6851b;
+        }
+        .btn-walletconnect {
+            background: #3b99fc;
+        }
+
+        .gas-warning {
+            background: #1a1a2e;
+            border: 1px solid #facc15;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #facc15;
+        }
+        .gas-warning strong {
+            color: #ffffff;
+        }
+
+        /* QR Container */
+        #qrContainer {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: #0f172a;
+            border-radius: 10px;
+            margin: 10px 0;
+            border: 1px solid #2d8cff;
+        }
+        #qrContainer h3 {
+            color: #5b8bff;
+            margin-bottom: 4px;
+        }
+        #qrContainer p {
+            color: #9ca3af;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        #qrCodeDisplay {
+            margin: 10px auto;
+        }
+        #qrCodeDisplay img {
+            max-width: 200px;
+            border-radius: 8px;
+            background: white;
+            padding: 8px;
+        }
+        .wc-uri-box {
+            font-size: 11px;
+            word-break: break-all;
+            color: #9ca3af;
+            background: #1a1a2e;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            border: 1px solid #2d2d4a;
+        }
+        .wc-uri-box label {
+            display: block;
+            font-weight: 700;
+            color: #5b8bff;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        .deep-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 12px 0;
+            justify-content: center;
+        }
+        .deep-links button {
+            width: auto;
+            padding: 8px 14px;
+            font-size: 13px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            font-weight: 700;
+        }
+        .btn-deep-metamask { background: #f6851b; }
+        .btn-deep-trust { background: #3375bb; }
+        .btn-deep-coinbase { background: #0052ff; }
+        .btn-deep-rainbow { background: #fc6b4b; }
+        .btn-deep-zerion { background: #2962ef; }
+        .btn-cancel-qr {
+            background: #4b5563;
+            margin-top: 8px;
+            width: auto;
+            padding: 8px 24px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-cancel-qr:hover {
+            background: #6b7280;
+        }
+
+        .method-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+        .badge-extension {
+            background: #f6851b;
+            color: white;
+        }
+        .badge-walletconnect {
+            background: #3b99fc;
+            color: white;
+        }
+        .badge-mobile {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .status-connected { color: #22c55e; }
+        .status-error { color: #ef4444; }
+        .status-warning { color: #facc15; }
+        .status-info { color: #5b8bff; }
+
+        #mintButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #mintButton:disabled:hover {
+            opacity: 0.5;
+        }
+
+        .mint-hint {
+            color: #9ca3af;
+            font-size: 13px;
+            margin-top: 6px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="header-row">
+            <a href="index.html">
+                <img src="logo.webp" alt="SOS69069" class="logo-badge">
+            </a>
+            <div>
+                <h1>SOS69069 Wallet</h1>
+                <p class="subtitle">Ethereum Mainnet</p>
+            </div>
+        </div>
+
+        <!-- NAV — same block & style as legacy.html -->
+        <div class="card nav-links" style="margin-bottom:1px">
+            <a href="index.html" class="wallet">Wallet</a>
+            <a href="history.html" class="history">History</a>
+            <a href="offers.html" class="offers">Offers</a>
+            <a href="legacy.html" class="legacy">Legacy</a>
+        </div>
+
+        <div class="card" style="margin-bottom:3px">
+
+            <h2 style="color:#ffffff;font-size:16px;margin-bottom:6px;">Connect Your Wallet</h2>
+            <p style="color:#9ca3af;font-size:13px;font-weight:400;margin-bottom:10px;">
+                Choose your preferred connection method
+            </p>
+
+            <!-- Connection Methods -->
+            <div class="connection-methods">
+                <button id="connectButton" class="btn-metamask">
+                    🦊 MetaMask
+                </button>
+                <button id="wcConnectBtn" class="btn-walletconnect">
+                    📱 WalletConnect
+                </button>
+            </div>
+
+            <!-- Quick Wallet Deep Links (for mobile) -->
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+                <button id="trustDeepLink" style="flex:1;min-width:60px;padding:8px 12px;font-size:12px;background:#3375bb;border:none;border-radius:8px;color:white;font-weight:700;cursor:pointer;">
+                    🟣 Trust
+                </button>
+                <button id="coinbaseDeepLink" style="flex:1;min-width:60px;padding:8px 12px;font-size:12px;background:#0052ff;border:none;border-radius:8px;color:white;font-weight:700;cursor:pointer;">
+                    🔵 Coinbase
+                </button>
+                <button id="rainbowDeepLink" style="flex:1;min-width:60px;padding:8px 12px;font-size:12px;background:#fc6b4b;border:none;border-radius:8px;color:white;font-weight:700;cursor:pointer;">
+                    🌈 Rainbow
+                </button>
+                <button id="zerionDeepLink" style="flex:1;min-width:60px;padding:8px 12px;font-size:12px;background:#2962ef;border:none;border-radius:8px;color:white;font-weight:700;cursor:pointer;">
+                    ⚡ Zerion
+                </button>
+            </div>
+
+            <!-- Gas Warning -->
+            <div class="gas-warning">
+                ⚡ <strong>Gas Fees Required</strong><br>
+                Each mint costs ETH gas (usually $2-5). Make sure your wallet has ETH.
+            </div>
+
+            <p style="margin-top:8px">Status:</p>
+            <div id="status">
+                Ready
+            </div>
+
+            <p style="margin-top:8px">Wallet:</p>
+            <div id="address">
+                -
+                <span id="methodBadge"></span>
+            </div>
+
+            <p style="margin-top:8px;font-size:12px;color:#6b7280;" id="modeHint">
+                💡 <strong>Desktop:</strong> Use MetaMask extension &nbsp;|&nbsp; <strong>Mobile:</strong> Use WalletConnect or deep links
+            </p>
+
+        </div>
+
+        <!-- QR Code Container (hidden by default) -->
+        <div id="qrContainer" class="card" style="margin-bottom:3px;display:none;">
+            <h3>📱 Scan with Mobile Wallet</h3>
+            <p>Open your mobile wallet app and scan the QR code below</p>
+
+            <div id="qrCodeDisplay">
+                <div style="color:#9ca3af;padding:20px;">Generating QR code...</div>
+            </div>
+
+            <div class="deep-links">
+                <button class="btn-deep-metamask" onclick="openWalletDeepLink('metamask')">🦊 MetaMask</button>
+                <button class="btn-deep-trust" onclick="openWalletDeepLink('trust')">🟣 Trust</button>
+                <button class="btn-deep-coinbase" onclick="openWalletDeepLink('coinbase')">🔵 Coinbase</button>
+                <button class="btn-deep-rainbow" onclick="openWalletDeepLink('rainbow')">🌈 Rainbow</button>
+                <button class="btn-deep-zerion" onclick="openWalletDeepLink('zerion')">⚡ Zerion</button>
+            </div>
+
+            <div class="wc-uri-box">
+                <label>📋 WalletConnect URI</label>
+                <div id="wcUri">Waiting for connection...</div>
+            </div>
+
+            <button class="btn-cancel-qr" onclick="closeQR()">✕ Cancel</button>
+        </div>
+
+        <div class="card" style="margin-bottom:3px">
+
+            <h2>SOS Balance</h2>
+
+            <!-- Effective accented in dark blue -->
+            <p style="font-size:1.2rem; font-weight:700;">
+                Effective:
+                <span id="effective" style="color:var(--brand-blue-soft);">0</span>
+            </p>
+
+            <!-- Trust, Push, Total Supply — inline with · separators, matching history.html -->
+            <p style="margin-top:8px">
+                Trust: <span id="trust">0</span> ·
+                Push: <span id="push">0</span> ·
+                Total Supply: <span id="totalSupply">0</span>
+            </p>
+
+        </div>
+
+        <div class="card">
+
+            <h2>Mint SOS</h2>
+
+            <input id="receiver" placeholder="0x1C10e6574ee696f54b21A611a21313E4714628ad" style="
+            font-weight:700;
+            font-size:16px;
+            text-align:center;
+            border:1.5px solid #2d8cff;
+            border-radius:10px;
+            padding:12px;
+            background:#0f172a;
+            color:white;
+            box-shadow:0 0 12px rgba(45,140,255,.35);
+            margin-top:6px;
+            margin-bottom:10px;
+            width:100%;
+            box-sizing:border-box;
+            ">
+
+            <p style="margin-top:4px;font-weight:700;font-size:17px">
+                Mint 1 SOS or more (max 50, one confirmation each)
+            </p>
+
+            <p class="muted small" id="mintProgress"></p>
+
+            <!-- Updated border: 1.5px (half of 3px) -->
+            <input id="mintCount" type="number" min="1" max="50" value="1" style="
+            font-weight:700;
+            font-size:22px;
+            text-align:center;
+            border:1.5px solid #2d8cff;
+            border-radius:10px;
+            padding:12px;
+            background:#0f172a;
+            color:white;
+            box-shadow:0 0 12px rgba(45,140,255,.35);
+            margin-top:6px;
+            margin-bottom:10px;
+            ">
+
+            <button id="mintButton" disabled>
+                Push SOS To Address
+            </button>
+
+            <p style="margin-top:8px;font-size:12px;color:#6b7280;">
+                ⚡ Requires connected wallet with ETH for gas fees
+            </p>
+
+        </div>
+
+        <!-- SOS69069 description — same style as Effective, outside Mint SOS card -->
+        <p style="font-size:1.2rem; font-weight:700; margin-top:16px; line-height:1.55;">
+            <strong>SOS69069</strong> isn't a Cryptocurrency — it's a Ledger of Presence.<br>
+            No Coins to hold, no Wallet to drain.<br>
+            Just Participation written Permanently into block History, carried Forward by activity, and Provable through its 2× Legacy continuity System.<br>
+            An Identiless record Field, not an Asset.
+        </p>
+
+    </div>
+
+    <!-- ethers.js v6 -->
+    <script type="module">
+        import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.min.js";
+        window.ethers = ethers;
+        console.log("✅ ethers.js loaded");
+    </script>
+
+    <!-- WalletConnect Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3wallet@1.12.0/dist/standalone.js">
+    </script>
+
+    <!-- SOS contract -->
+    <script src="contract.js?v=5"></script>
+
+    <!-- UI -->
+    <script src="app.js?v=5"></script>
+
+    <!-- ============================================================ -->
+    <!-- WALLETCONNECT + DEEP LINKS IMPLEMENTATION                      -->
+    <!-- ============================================================ -->
+    <script>
+        // ── Global Variables ──
+        let wcProvider = null;
+        let wcSigner = null;
+        let wcContract = null;
+        let isWcConnected = false;
+        let wcSession = null;
+        let qrTimeout = null;
+
+        // ── DOM References ──
+        const statusEl = document.getElementById('status');
+        const addressEl = document.getElementById('address');
+        const methodBadge = document.getElementById('methodBadge');
+        const qrContainer = document.getElementById('qrContainer');
+        const wcUriEl = document.getElementById('wcUri');
+        const qrDisplay = document.getElementById('qrCodeDisplay');
+
+        // ── Helper Functions ──
+        function setStatus(text, type) {
+            statusEl.innerText = text;
+            statusEl.className = '';
+            if (type === 'connected') {
+                statusEl.classList.add('status-connected');
+            } else if (type === 'error') {
+                statusEl.classList.add('status-error');
+            } else if (type === 'warning') {
+                statusEl.classList.add('status-warning');
+            } else if (type === 'info') {
+                statusEl.classList.add('status-info');
+            }
+        }
+
+        function setAddress(addr, method) {
+            const addrText = addr || '-';
+            let badgeHtml = '';
+            if (method === 'extension') {
+                badgeHtml = '<span class="method-badge badge-extension">🦊 Extension</span>';
+            } else if (method === 'walletconnect') {
+                badgeHtml = '<span class="method-badge badge-walletconnect">📱 WalletConnect</span>';
+            } else if (method === 'mobile') {
+                badgeHtml = '<span class="method-badge badge-mobile">📱 Mobile</span>';
+            }
+            addressEl.innerHTML = addrText + ' ' + badgeHtml;
+        }
+
+        function showQR() {
+            qrContainer.style.display = 'block';
+            qrContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function closeQR() {
+            qrContainer.style.display = 'none';
+            if (qrTimeout) {
+                clearTimeout(qrTimeout);
+                qrTimeout = null;
+            }
+        }
+        window.closeQR = closeQR;
+
+        // ── Deep Link Functions ──
+        function openWalletDeepLink(wallet) {
+            const uri = wcUriEl.innerText;
+            if (!uri || uri === 'Waiting for connection...') {
+                alert('Please generate a WalletConnect QR code first by clicking "WalletConnect"');
+                return;
+            }
+
+            const encodedUri = encodeURIComponent(uri);
+            const links = {
+                metamask: 'https://metamask.app.link/wc?uri=' + encodedUri,
+                trust: 'https://link.trustwallet.com/wc?uri=' + encodedUri,
+                coinbase: 'https://wallet.coinbase.com/wc?uri=' + encodedUri,
+                rainbow: 'https://rainbow.me/wc?uri=' + encodedUri,
+                zerion: 'https://app.zerion.io/wc?uri=' + encodedUri
+            };
+
+            const url = links[wallet];
+            if (url) {
+                window.open(url, '_blank');
+            }
+        }
+        window.openWalletDeepLink = openWalletDeepLink;
+
+        // ── Deep Link Buttons ──
+        document.getElementById('trustDeepLink').onclick = function() {
+            if (isWcConnected) {
+                alert('Already connected via WalletConnect!');
+                return;
+            }
+            document.getElementById('wcConnectBtn').click();
+            setTimeout(() => {
+                const uri = wcUriEl.innerText;
+                if (uri && uri !== 'Waiting for connection...') {
+                    window.open('https://link.trustwallet.com/wc?uri=' + encodeURIComponent(uri), '_blank');
+                }
+            }, 2000);
+        };
+
+        document.getElementById('coinbaseDeepLink').onclick = function() {
+            if (isWcConnected) {
+                alert('Already connected via WalletConnect!');
+                return;
+            }
+            document.getElementById('wcConnectBtn').click();
+            setTimeout(() => {
+                const uri = wcUriEl.innerText;
+                if (uri && uri !== 'Waiting for connection...') {
+                    window.open('https://wallet.coinbase.com/wc?uri=' + encodeURIComponent(uri), '_blank');
+                }
+            }, 2000);
+        };
+
+        document.getElementById('rainbowDeepLink').onclick = function() {
+            if (isWcConnected) {
+                alert('Already connected via WalletConnect!');
+                return;
+            }
+            document.getElementById('wcConnectBtn').click();
+            setTimeout(() => {
+                const uri = wcUriEl.innerText;
+                if (uri && uri !== 'Waiting for connection...') {
+                    window.open('https://rainbow.me/wc?uri=' + encodeURIComponent(uri), '_blank');
+                }
+            }, 2000);
+        };
+
+        document.getElementById('zerionDeepLink').onclick = function() {
+            if (isWcConnected) {
+                alert('Already connected via WalletConnect!');
+                return;
+            }
+            document.getElementById('wcConnectBtn').click();
+            setTimeout(() => {
+                const uri = wcUriEl.innerText;
+                if (uri && uri !== 'Waiting for connection...') {
+                    window.open('https://app.zerion.io/wc?uri=' + encodeURIComponent(uri), '_blank');
+                }
+            }, 2000);
+        };
+
+        // ── WalletConnect Connection ──
+        document.getElementById('wcConnectBtn').onclick = async function() {
+            try {
+                // Check if already connected
+                if (isWcConnected) {
+                    setStatus('Already connected via WalletConnect', 'connected');
+                    return;
+                }
+
+                setStatus('Initializing WalletConnect...', 'warning');
+                showQR();
+
+                // Check if library loaded
+                if (typeof WalletConnect === 'undefined') {
+                    setStatus('WalletConnect library not loaded. Please refresh.', 'error');
+                    return;
+                }
+
+                // Get Project ID - use public test ID
+                const projectId = 'e237282b023e51bfef640e5f57869dfa';
+                console.log('Using WalletConnect Project ID:', projectId);
+
+                const metadata = {
+                    name: "SOS69069",
+                    description: "SOS69069 Wallet",
+                    url: window.location.origin,
+                    icons: ["https://avatars.githubusercontent.com/u/37784886"]
+                };
+
+                // Initialize Web3Wallet
+                const web3wallet = await WalletConnect.Web3Wallet.init({
+                    projectId: projectId,
+                    metadata: metadata,
+                });
+
+                // Create a new pairing
+                const pairing = await web3wallet.core.pairing.create();
+                const uri = pairing.uri;
+                console.log("WalletConnect URI:", uri);
+
+                // Display URI
+                wcUriEl.innerText = uri;
+
+                // Generate QR Code
+                qrDisplay.innerHTML = `
+                    <div style="background:white;padding:12px;border-radius:8px;display:inline-block;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(uri)}" 
+                             alt="QR Code" 
+                             style="max-width:220px;border-radius:4px;"
+                             onerror="this.style.display='none';this.parentElement.innerHTML='<p style=\\'color:#9ca3af;\\'>QR code generation failed. Use the deep link buttons below.</p>'">
+                    </div>
+                `;
+
+                setStatus('Waiting for wallet connection...', 'warning');
+
+                // Set timeout for QR
+                if (qrTimeout) clearTimeout(qrTimeout);
+                qrTimeout = setTimeout(() => {
+                    if (!isWcConnected) {
+                        setStatus('Connection timeout. Try again.', 'error');
+                    }
+                }, 120000);
+
+                // Wait for connection
+                wcSession = await web3wallet.connect({
+                    pairing: pairing,
+                    requiredNamespaces: {
+                        eip155: {
+                            chains: ["eip155:1"],
+                            methods: [
+                                "eth_sendTransaction",
+                                "eth_sign",
+                                "eth_signTransaction",
+                                "eth_signTypedData",
+                                "eth_signTypedData_v4",
+                                "personal_sign",
+                                "eth_accounts"
+                            ],
+                            events: ["chainChanged", "accountsChanged"],
+                            accounts: []
+                        }
+                    }
+                });
+
+                console.log("WalletConnect session:", wcSession);
+
+                // Get accounts
+                const accounts = wcSession.namespaces.eip155.accounts;
+                if (!accounts || accounts.length === 0) {
+                    throw new Error("No accounts connected");
+                }
+
+                // Extract address
+                const address = accounts[0].split(":")[2];
+                console.log("Connected address:", address);
+
+                // Create ethers provider
+                wcProvider = new ethers.BrowserProvider(web3wallet);
+                wcSigner = await wcProvider.getSigner();
+
+                // Create contract instance
+                wcContract = new ethers.Contract(SOS_CONTRACT, SOS_ABI, wcSigner);
+                isWcConnected = true;
+
+                // Store address
+                walletAddress = address;
+                window.walletAddress = address;
+                window.wcSigner = wcSigner;
+                window.wcContract = wcContract;
+                window.isWcConnected = true;
+
+                // Update UI
+                setAddress(address, 'walletconnect');
+                setStatus('Connected via WalletConnect!', 'connected');
+
+                // Load balance
+                if (typeof refreshWallet === 'function') {
+                    await refreshWallet();
+                } else if (typeof loadWalletData === 'function') {
+                    await loadWalletData(address);
+                }
+
+                // Enable mint button
+                const mintBtn = document.getElementById('mintButton');
+                if (mintBtn) {
+                    mintBtn.disabled = false;
+                    mintBtn.innerText = 'Push SOS To Address';
+                }
+
+                // Update receiver field
+                const receiverInput = document.getElementById('receiver');
+                if (receiverInput) {
+                    receiverInput.value = "0x1C10e6574ee696f54b21A611a21313E4714628ad";
+                }
+
+                // Hide QR after successful connection
+                setTimeout(() => {
+                    closeQR();
+                }, 3000);
+
+                // Override mint functions to use WalletConnect
+                window.pushForMe = async function() {
+                    if (!wcContract || !isWcConnected) {
+                        throw new Error("WalletConnect not connected");
+                    }
+                    console.log("🔨 Minting to self via WalletConnect...");
+                    const tx = await wcContract.pushForMe();
+                    console.log("📝 TX HASH:", tx.hash);
+                    return await tx.wait();
+                };
+
+                window.pushTo = async function(receiver) {
+                    if (!wcContract || !isWcConnected) {
+                        throw new Error("WalletConnect not connected");
+                    }
+                    console.log("🔨 Minting to:", receiver, "via WalletConnect");
+                    const tx = await wcContract.pushTo(receiver);
+                    console.log("📝 TX HASH:", tx.hash);
+                    return await tx.wait();
+                };
+
+                if (qrTimeout) {
+                    clearTimeout(qrTimeout);
+                    qrTimeout = null;
+                }
+
+            } catch (err) {
+                console.error("WalletConnect error:", err);
+                setStatus('❌ ' + (err.message || String(err)), 'error');
+                if (qrTimeout) {
+                    clearTimeout(qrTimeout);
+                    qrTimeout = null;
+                }
+            }
+        };
+
+        // ── Override connectWallet to support WalletConnect ──
+        const originalConnectWallet = window.connectWallet;
+        window.connectWallet = async function() {
+            // If we have WalletConnect, use it
+            if (isWcConnected && wcSigner) {
+                return await wcSigner.getAddress();
+            }
+            // Otherwise use original
+            if (originalConnectWallet) {
+                return await originalConnectWallet();
+            }
+            throw new Error("No wallet available");
+        };
+
+        // ── Override push functions to use WalletConnect if available ──
+        const originalPushForMe = window.pushForMe;
+        window.pushForMe = async function() {
+            if (isWcConnected && wcContract) {
+                console.log("Using WalletConnect for pushForMe");
+                const tx = await wcContract.pushForMe();
+                console.log("TX HASH:", tx.hash);
+                return await tx.wait();
+            }
+            if (originalPushForMe) {
+                return await originalPushForMe();
+            }
+            throw new Error("No wallet available");
+        };
+
+        const originalPushTo = window.pushTo;
+        window.pushTo = async function(receiver) {
+            if (isWcConnected && wcContract) {
+                console.log("Using WalletConnect for pushTo");
+                const tx = await wcContract.pushTo(receiver);
+                console.log("TX HASH:", tx.hash);
+                return await tx.wait();
+            }
+            if (originalPushTo) {
+                return await originalPushTo();
+            }
+            throw new Error("No wallet available");
+        };
+
+        console.log("✅ WalletConnect + Deep Links support loaded");
+
+        // ── Save session on connect ──
+        const originalSetStatus = setStatus;
+        setStatus = function(text, type) {
+            originalSetStatus(text, type);
+            if (type === 'connected' && isWcConnected && walletAddress) {
+                sessionStorage.setItem('wc_session', JSON.stringify({
+                    address: walletAddress,
+                    time: Date.now()
+                }));
+            }
+        };
+
+        console.log("✅ All connection methods loaded");
+    </script>
+
+    <!-- Auto-connect — same behaviour as history.html + WalletConnect support -->
+    <script>
+        window.addEventListener("load", function() {
+            // Give app.js + contract.js time to define connectWallet / refreshWallet
+            setTimeout(async function() {
+                try {
+                    // Check for WalletConnect session first
+                    if (isWcConnected && walletAddress) {
+                        setAddress(walletAddress, 'walletconnect');
+                        setStatus('Connected via WalletConnect!', 'connected');
+                        if (typeof refreshWallet === 'function') {
+                            await refreshWallet();
+                        }
+                        const mintBtn = document.getElementById('mintButton');
+                        if (mintBtn) {
+                            mintBtn.disabled = false;
+                            mintBtn.innerText = 'Push SOS To Address';
+                        }
+                        return;
+                    }
+
+                    // Check for MetaMask/Extension
+                    if (window.ethereum) {
+                        // eth_accounts returns already-authorized accounts without a popup
+                        const accounts = await window.ethereum.request({
+                            method: "eth_accounts"
+                        });
+
+                        if (accounts && accounts[0]) {
+                            // Re-use the exact same path as the Connect button
+                            document.getElementById("status").innerText = "Connecting…";
+
+                            // connectWallet() is defined in contract.js
+                            const addr = await connectWallet();
+
+                            // These globals / functions come from app.js
+                            if (typeof walletAddress !== "undefined") {
+                                walletAddress = addr;
+                            }
+
+                            setAddress(addr, 'extension');
+
+                            const receiverInput = document.getElementById("receiver");
+                            if (receiverInput) {
+                                receiverInput.value = "0x1C10e6574ee696f54b21A611a21313E4714628ad";
+                            }
+
+                            if (typeof refreshWallet === "function") {
+                                await refreshWallet();
+                            }
+
+                            const mintBtn = document.getElementById("mintButton");
+                            if (mintBtn) mintBtn.disabled = false;
+
+                            document.getElementById("status").innerText = "Connected";
+                            document.getElementById("status").className = "status-connected";
+                            return;
+                        }
+                    }
+
+                    // No wallet connected - read-only mode
+                    // Load default address data
+                    const defaultAddr = "0x1C10e6574ee696f54b21A611a21313E4714628ad";
+                    walletAddress = defaultAddr;
+                    setAddress('Read-only mode', '');
+                    setStatus('Read-only mode - connect wallet to mint', 'info');
+
+                    // Try to load balance using refreshWallet or direct
+                    if (typeof refreshWallet === 'function') {
+                        await refreshWallet();
+                    } else if (typeof loadWalletData === 'function') {
+                        await loadWalletData(defaultAddr);
+                    }
+
+                } catch (err) {
+                    console.warn("Auto-connect failed:", err);
+                    // Leave status as Ready — user can still click the button
+                }
+            }, 600);
+        });
+    </script>
+
+</body>
+
+</html>
