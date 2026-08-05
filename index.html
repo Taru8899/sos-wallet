@@ -132,7 +132,7 @@
             color: #5b8bff;
         }
 
-        /* Mobile detection */
+        /* Mobile detection - show WalletConnect button only on mobile */
         .wc-mobile-btn {
             display: none;
             background: #3b99fc;
@@ -236,6 +236,7 @@
             color: var(--brand-blue-soft);
             text-decoration: none;
             font-weight: 600;
+            cursor: pointer;
         }
         .metamask-link:hover {
             text-decoration: underline;
@@ -276,8 +277,8 @@
                 Connect Wallet
             </button>
 
-            <!-- MetaMask link under connect button -->
-            <a href="https://metamask.app.link/dapp/" target="_blank" class="metamask-link" id="metamaskLink">
+            <!-- MetaMask link under connect button - FIXED -->
+            <a href="#" onclick="openMetaMask(); return false;" class="metamask-link" id="metamaskLink">
                 <span class="link-icon">🦊</span> MetaMask Wallet
             </a>
 
@@ -422,7 +423,7 @@
     <script src="app.js?v=6"></script>
 
     <!-- ============================================================ -->
-    <!-- DIRECT DEEP LINKS - No WalletConnect Library Required         -->
+    <!-- DIRECT DEEP LINKS - FIXED METAMASK                            -->
     <!-- ============================================================ -->
     <script>
         // ── DOM References ──
@@ -471,22 +472,67 @@
         }
         window.closeWCModal = closeWCModal;
 
+        // ── FIXED: MetaMask Link Function ──
+        function openMetaMask() {
+            // Get the current page URL
+            const currentUrl = window.location.href;
+            
+            // Method 1: Try the dapp link format (works on mobile + desktop)
+            const dappUrl = 'https://metamask.app.link/dapp/' + currentUrl;
+            
+            // Method 2: Try the browser format (alternative)
+            const browserUrl = 'https://metamask.app.link/browser/' + currentUrl;
+            
+            // Try dapp format first, then browser format as fallback
+            try {
+                // Open in a new window/tab
+                const win = window.open(dappUrl, '_blank');
+                
+                // If window.open was blocked, try the other format
+                if (!win || win.closed || typeof win.closed === 'undefined') {
+                    window.location.href = dappUrl;
+                }
+                
+                setStatus('🦊 Opening MetaMask...', 'info');
+                
+                setTimeout(() => {
+                    setStatus('🔄 Return to this page after connecting in MetaMask', 'info');
+                }, 3000);
+                
+            } catch (err) {
+                console.error('Failed to open MetaMask:', err);
+                // Fallback: try the browser format
+                try {
+                    window.open(browserUrl, '_blank');
+                    setStatus('🦊 Opening MetaMask (alternative)...', 'info');
+                } catch (e) {
+                    setStatus('❌ Could not open MetaMask. Please open the app manually.', 'error');
+                }
+            }
+            
+            return false;
+        }
+        window.openMetaMask = openMetaMask;
+
         // ── Direct Deep Link Functions ──
         function openWallet(wallet) {
             const statusMsg = document.getElementById('wcStatus');
             
-            // Deep link URLs for each wallet
+            // Get the current page URL
+            const currentUrl = window.location.href;
+            
+            // Deep link URLs for each wallet with proper page loading
             const links = {
                 metamask: {
-                    url: 'https://metamask.app.link/dapp/' + window.location.host + window.location.pathname,
+                    url: 'https://metamask.app.link/dapp/' + currentUrl,
                     name: 'MetaMask'
                 },
                 tokenpocket: {
-                    url: 'https://tokenpocket.pro/dapp/' + window.location.host + window.location.pathname,
+                    url: 'https://tokenpocket.pro/dapp/' + currentUrl,
                     name: 'TokenPocket'
                 },
                 trust: {
-                    url: 'https://link.trustwallet.com/open?url=' + encodeURIComponent(window.location.href),
+                    url: 'https://link.trustwallet.com/open?url=' + encodeURIComponent(currentUrl),
                     name: 'Trust Wallet'
                 }
             };
@@ -502,7 +548,13 @@
             statusMsg.className = 'wc-status info';
 
             try {
-                window.open(walletData.url, '_blank');
+                // Try opening in a new window
+                const win = window.open(walletData.url, '_blank');
+                
+                // If window.open was blocked, try direct navigation
+                if (!win || win.closed || typeof win.closed === 'undefined') {
+                    window.location.href = walletData.url;
+                }
                 
                 statusMsg.innerText = '✅ ' + walletData.name + ' opened! Return to this page after connecting.';
                 statusMsg.className = 'wc-status success';
@@ -632,4 +684,4 @@
 
 </body>
 
-</html>
+    </html>
