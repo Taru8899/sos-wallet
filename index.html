@@ -226,6 +226,24 @@
         .wallet-icon {
             font-size: 24px;
         }
+
+        /* MetaMask link under connect button */
+        .metamask-link {
+            display: block;
+            text-align: center;
+            margin-top: 8px;
+            font-size: 14px;
+            color: var(--brand-blue-soft);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .metamask-link:hover {
+            text-decoration: underline;
+            opacity: 0.8;
+        }
+        .metamask-link .link-icon {
+            margin-right: 4px;
+        }
     </style>
 
 </head>
@@ -257,6 +275,11 @@
             <button id="connectButton">
                 Connect Wallet
             </button>
+
+            <!-- MetaMask link under connect button -->
+            <a href="https://metamask.app.link/dapp/" target="_blank" class="metamask-link" id="metamaskLink">
+                <span class="link-icon">🦊</span> MetaMask Wallet
+            </a>
 
             <!-- Mobile wallet button - only shows on mobile -->
             <button id="wcMobileBtn" class="wc-mobile-btn">
@@ -299,7 +322,7 @@
 
         <div class="card">
 
-            <h2>Mint SOS</h2>
+            <!-- "Mint SOS" heading has been REMOVED -->
 
             <input id="receiver" placeholder="0x1C10e6574ee696f54b21A611a21313E4714628ad" style="
             font-weight:700;
@@ -453,7 +476,6 @@
             const statusMsg = document.getElementById('wcStatus');
             
             // Deep link URLs for each wallet
-            // These open the wallet app directly on mobile
             const links = {
                 metamask: {
                     url: 'https://metamask.app.link/dapp/' + window.location.host + window.location.pathname,
@@ -479,20 +501,16 @@
             statusMsg.innerText = '⏳ Opening ' + walletData.name + '...';
             statusMsg.className = 'wc-status info';
 
-            // Try to open the wallet
             try {
-                // Open the deep link
                 window.open(walletData.url, '_blank');
                 
                 statusMsg.innerText = '✅ ' + walletData.name + ' opened! Return to this page after connecting.';
                 statusMsg.className = 'wc-status success';
                 
-                // Close modal after 3 seconds
                 setTimeout(() => {
                     closeWCModal();
                 }, 3000);
                 
-                // Show instruction to return
                 setStatus('📱 Wallet opened - return here after connecting', 'info');
             } catch (err) {
                 console.error('Failed to open wallet:', err);
@@ -504,7 +522,6 @@
 
         // ── Mobile Wallet Button ──
         document.getElementById('wcMobileBtn').onclick = function() {
-            // Check if we're on mobile
             const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
             if (!isMobile) {
                 setStatus('📱 This feature is for mobile devices', 'info');
@@ -520,26 +537,19 @@
             }
         });
 
-        // ── Detect if wallet is already connected via deep link ──
-        // When user returns from wallet, we try to auto-connect
+        // ── Auto-reconnect when returning from wallet ──
         window.addEventListener('focus', async function() {
-            // Check if we have a wallet connected
             if (window.ethereum) {
                 try {
                     const accounts = await window.ethereum.request({ method: 'eth_accounts' });
                     if (accounts && accounts[0]) {
-                        // Already connected
                         return;
                     }
-                } catch (e) {
-                    // Not connected
-                }
+                } catch (e) {}
             }
             
-            // If we're on mobile and we have a saved connection attempt
             const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
             if (isMobile && window.ethereum) {
-                // Try to connect automatically after returning from wallet
                 try {
                     setStatus('🔄 Reconnecting...', 'warning');
                     const addr = await connectWallet();
@@ -565,24 +575,18 @@
     <!-- Auto-connect — same behaviour as history.html -->
     <script>
         window.addEventListener("load", function() {
-            // Give app.js + contract.js time to define connectWallet / refreshWallet
             setTimeout(async function() {
                 try {
-                    // Check for MetaMask/Extension first
                     if (window.ethereum) {
-                        // eth_accounts returns already-authorized accounts without a popup
                         const accounts = await window.ethereum.request({
                             method: "eth_accounts"
                         });
 
                         if (accounts && accounts[0]) {
-                            // Re-use the exact same path as the Connect button
                             document.getElementById("status").innerText = "Connecting…";
 
-                            // connectWallet() is defined in contract.js
                             const addr = await connectWallet();
 
-                            // These globals / functions come from app.js
                             if (typeof walletAddress !== "undefined") {
                                 walletAddress = addr;
                             }
@@ -608,13 +612,11 @@
                     }
 
                     // No wallet connected - read-only mode
-                    // Load default address data
                     const defaultAddr = "0x1C10e6574ee696f54b21A611a21313E4714628ad";
                     walletAddress = defaultAddr;
                     setAddress('Read-only mode', '');
                     setStatus('Read-only mode - connect wallet to mint', 'info');
 
-                    // Try to load balance using refreshWallet or direct
                     if (typeof refreshWallet === 'function') {
                         await refreshWallet();
                     } else if (typeof loadWalletData === 'function') {
@@ -623,7 +625,6 @@
 
                 } catch (err) {
                     console.warn("Auto-connect failed:", err);
-                    // Leave status as Ready — user can still click the button
                 }
             }, 600);
         });
