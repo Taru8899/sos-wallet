@@ -176,7 +176,7 @@
     <div id="status">Ready</div>
   </div>
   <div class="status-section wallet-address">
-    <p>Wallet address:</p>
+    <p>Connected:</p>
     <div id="address">-</div>
   </div>
 </div>
@@ -196,58 +196,60 @@
   <p id="effectiveHint" class="muted small" style="display:none;color:#fca5a5;margin-top:6px"></p>
 </div>
 
-<!-- ===== SOS MARKET PRICE ===== -->
+<!-- ===== SOS LEDGER PRICE ===== -->
 <div class="card" id="marketCard" style="margin-bottom:3px">
-  <h2>SOS Market Price</h2>
+  <h2>Ledger Price</h2>
   <div class="market-price-line">
-    Buy price (max): <span class="price-value" id="midBuy">—</span>
+    Acquire (max): <span class="price-value" id="midBuy">—</span>
   </div>
   <div class="market-price-line">
-    Sell price (max): <span class="price-value" id="midSell">—</span>
+    Release (max): <span class="price-value" id="midSell">—</span>
   </div>
-  <p class="muted small" id="midMeta" style="margin-top:8px;display:none;">No priced offers yet</p>
+  <p class="muted small" id="midMeta" style="margin-top:8px;display:none;">No priced Presence yet</p>
 </div>
-  <!-- ===== SOS CONTRACT ===== -->
-        <div class="card" style="margin-bottom:3px">
-          <h2>SOS Contract</h2>
-          <p class="info-text">
-            <a href="https://etherscan.io/address/0x61af906f53eb927790055ac8ea99916a01873c15" target="_blank" rel="noopener noreferrer" style="color:var(--brand-blue-soft);font-weight:700;word-break:break-all;">
-              0x61af906f53eb927790055ac8ea99916a01873c15
-            </a>
-          </p>
-          <p class="muted small">View on Etherscan (Ethereum Mainnet)</p>
-        </div>
-<!-- ===== BROWSE OFFERS ===== -->
+
+<!-- ===== SOS CONTRACT ===== -->
+<div class="card" style="margin-bottom:3px">
+  <h2>SOS Contract</h2>
+  <p class="info-text">
+    <a href="https://etherscan.io/address/0x61af906f53eb927790055ac8ea99916a01873c15" target="_blank" rel="noopener noreferrer" style="color:var(--brand-blue-soft);font-weight:700;word-break:break-all;">
+      0x61af906f53eb927790055ac8ea99916a01873c15
+    </a>
+  </p>
+  <p class="muted small">View on Etherscan (Ethereum Mainnet)</p>
+</div>
+
+<!-- ===== DEALS ===== -->
 <div class="card">
-  <h2>Browse Offers</h2>
+  <h2>Participation Deals</h2>
   <div class="filters">
     <button class="filter-btn active" data-filter="all">All</button>
-    <button class="filter-btn" data-filter="sell">Sell</button>
-    <button class="filter-btn" data-filter="buy">Buy</button>
+    <button class="filter-btn" data-filter="sell">I Carry</button>
+    <button class="filter-btn" data-filter="buy">I Seek</button>
   </div>
-  <div id="offersList" class="offers-list"><p class="muted">Loading…</p></div>
+  <div id="offersList" class="offers-list"><p class="muted">Loading Presence…</p></div>
 </div>
 
 <!-- ===== LIVE SYNC ===== -->
 <div class="card">
   <h2>Live Sync</h2>
-  <p class="muted small">Everyone browsing this page sees new offers in real time.</p>
-  <p class="live-sync-text"><span id="exportMeta">Connecting to live offer feed…</span></p>
+  <p class="muted small">Everyone watching this page sees new Presence appear in real time.</p>
+  <p class="live-sync-text"><span id="exportMeta">Connecting to live Presence feed…</span></p>
 </div>
 
-<!-- ===== POST A NEW OFFER ===== -->
+<!-- ===== POST A NEW DEAL ===== -->
 <div class="card">
-  <h2>Post a New Offer</h2>
+  <h2>Inscribe a Deal</h2>
   <label>Type</label>
   <select id="offerType">
-    <option value="sell">Sell SOS (I have mints to offer)</option>
-    <option value="buy">Buy SOS (I want to receive mints)</option>
+    <option value="sell">I CARRY Presence (I have mints to offer)</option>
+    <option value="buy">I SEEK Presence (I want to receive mints)</option>
   </select>
-  <label>Amount of SOS</label>
+  <label>Amount of Presence</label>
   <input id="offerAmount" type="number" min="1" step="1" placeholder="e.g. 1">
-  <label>What you want / offer in return</label>
-  <input id="offerPrice" placeholder="e.g. 0.01 ETH, 5 USDC, or Chupa Chups">
-  <label>Payment / exchange method</label>
+  <label>What you SEEK / CARRY in return</label>
+  <input id="offerPrice" placeholder="e.g. 0.01 ETH, 5 USDC, or a bag of Chupa Chups">
+  <label>Legacy method</label>
   <div class="chips" id="methodChips">
     <button type="button" data-method="ETH">ETH</button>
     <button type="button" data-method="USDT">USDT</button>
@@ -261,17 +263,17 @@
   <input id="offerMethod" placeholder="Tap a method above or type your own">
   <label>Contact (Telegram / X / Discord / email)</label>
   <input id="offerContact" placeholder="@username or email">
-  <label>Note (optional)</label>
-  <input id="offerNote" placeholder="Any extra details for potential trading partners">
-  <button id="signOfferBtn" disabled>Sign &amp; Post (mint 1 SOS)</button>
+  <label>Note of Presence (optional)</label>
+  <input id="offerNote" placeholder="Any extra details">
+  <button id="signOfferBtn" disabled>Sign &amp; Inscribe (mint 1 SOS)</button>
 </div>
 
 <!-- ===== SAFETY RULES ===== -->
 <div class="card warning-card">
-  <h2>⚠ Safety Rules</h2>
-  <p class="safety-rule-item">Sell offer accepted → you mint SOS to buyer first; expect payment only after confirmation.</p>
-  <p class="safety-rule-item">Negative Effective balance (Trust − Push) blocks selling. Buy/accept more SOS to raise it.</p>
-  <p class="safety-rule-item">Flag no-pay reports non-payers (needs your mint tx as evidence) but does not reverse the deal.</p>
+  <h2>⚠ Safety of Presence</h2>
+  <p class="safety-rule-item">I CARRY accepted → you mint SOS to the Seeker first; expect payment only after confirmation.</p>
+  <p class="safety-rule-item">Negative Effective (Trust − Push) blocks I CARRY. Seek more SOS to raise it.</p>
+  <p class="safety-rule-item">Flag no-deal reports (needs your mint tx as evidence) but does not reverse the deal.</p>
   <p class="safety-rule-item">Effective = Trust − Push (genuine unspent activity).</p>
   <p class="safety-rule-item">Trust = total SOS received.</p>
   <p class="safety-rule-item">Push = SOS you minted via actions.</p>
@@ -344,7 +346,7 @@
           // Update live sync count - white text with orange count
           const meta = document.getElementById('exportMeta');
           if (meta) {
-            meta.innerHTML = 'Live · <span class="sync-count">' + latest20.length + ' offer(s) synced</span>';
+            meta.innerHTML = 'Live · <span class="sync-count">' + latest20.length + ' deal(s) synced</span>';
           }
           // Pass the filtered list to the original callback
           callback(latest20);
@@ -402,8 +404,8 @@
       if (hint) {
         if (effective < 0n) {
           hint.style.display = "block";
-          hint.innerText = "Effective balance is " + effective.toString() +
-            " — selling is blocked. Buy more SOS.";
+          hint.innerText = "Effective is " + effective.toString() +
+            " — I CARRY is blocked. Seek more SOS.";
         } else {
           hint.style.display = "none";
           hint.innerText = "";
@@ -425,7 +427,7 @@
 
         if (!accounts || !accounts[0]) return;
 
-        document.getElementById("status").innerText = "Connecting…";
+        document.getElementById("status").innerText = "Linking…";
 
         // connectWallet() from contract.js
         const addr = await connectWallet();
@@ -444,7 +446,7 @@
         const signBtn = document.getElementById("signOfferBtn");
         if (signBtn) signBtn.disabled = false;
 
-        document.getElementById("status").innerText = "Connected";
+        document.getElementById("status").innerText = "Linked";
       } catch (err) {
         console.warn("Auto-connect failed:", err);
       }
