@@ -145,6 +145,14 @@
     color: #d1d5db;
     margin-bottom: 6px;
   }
+  .wallet-label {
+    color: #ffffff;
+    font-weight: 700;
+  }
+  .wallet-address-text {
+    color: #ffffff;
+    font-weight: 400;
+  }
 </style>
 </head>
 <body>
@@ -176,8 +184,7 @@
     <div id="status">Ready</div>
   </div>
   <div class="status-section wallet-address">
-    <p>Connected:</p>
-    <div id="address">-</div>
+    <p><span class="wallet-label">Wallet</span> <span class="wallet-address-text" id="address">-</span></p>
   </div>
 </div>
 
@@ -320,7 +327,17 @@
     watchOffers(callback) {
       onValue(offersRef, (snap) => {
         const val = snap.val() || {};
-        callback(Object.values(val));
+        const offers = Object.values(val);
+        // Sort by createdAt descending (newest first)
+        const sorted = offers.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        // Keep only latest 20
+        const latest20 = sorted.slice(0, 20);
+        // Update live sync count
+        const meta = document.getElementById('exportMeta');
+        if (meta) {
+          meta.innerHTML = 'Live · <span class="sync-count">' + latest20.length + ' deal(s) synced</span>';
+        }
+        callback(latest20);
       });
     },
     watchConnection(callback) {
@@ -336,26 +353,6 @@
 
 <script>
   (function() {
-    // Override watchOffers to limit to 20 and add sequential numbering
-    const originalWatch = window.SOSDB.watchOffers;
-    if (originalWatch) {
-      window.SOSDB.watchOffers = function(callback) {
-        originalWatch(function(offers) {
-          // Sort by createdAt descending (newest first)
-          const sorted = offers.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-          // Keep only latest 20
-          const latest20 = sorted.slice(0, 20);
-          // Update live sync count - white text with orange count
-          const meta = document.getElementById('exportMeta');
-          if (meta) {
-            meta.innerHTML = 'Live · <span class="sync-count">' + latest20.length + ' deal(s) synced</span>';
-          }
-          // Pass the filtered list to the original callback
-          callback(latest20);
-        });
-      };
-    }
-
     // MutationObserver to add sequential numbers (#00000, #00001, ...)
     const listContainer = document.getElementById('offersList');
     const listObserver = new MutationObserver(function() {
@@ -434,7 +431,11 @@
         // connectWallet() from contract.js
         const addr = await connectWallet();
 
-        document.getElementById("address").innerText = addr;
+        // Update the wallet display with "Wallet" in white
+        const addressEl = document.getElementById("address");
+        if (addressEl) {
+          addressEl.innerText = addr;
+        }
 
         // 1) Prefer offers.js refresh if it exists
         if (typeof refreshWallet === "function") {
