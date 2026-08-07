@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SOS69069 · Offers</title>
+<title>SOS69069 · Presence</title>
 <link rel="stylesheet" href="style.css">
 <style>
   .nav-links { text-align: center; margin: 6px 0; }
@@ -199,10 +199,10 @@
 <div class="card" id="marketCard" style="margin-bottom:3px">
   <h2>Ledger of Presence</h2>
   <div class="market-price-line">
-    Acquire (max): <span class="price-value" id="midBuy">—</span>
+    FOR ME (max): <span class="price-value" id="midBuy">—</span>
   </div>
   <div class="market-price-line">
-    Release (max): <span class="price-value" id="midSell">—</span>
+    FOR YOU (max): <span class="price-value" id="midSell">—</span>
   </div>
   <p class="muted small" id="midMeta" style="margin-top:8px;display:none;">No priced Presence yet</p>
 </div>
@@ -218,7 +218,7 @@
   <p class="muted small">View on Etherscan (Ethereum Mainnet)</p>
 </div>
 
-<!-- ===== DEALS ===== -->
+<!-- ===== OFFERS ===== -->
 <div class="card">
   <h2>Presence</h2>
   <div class="filters">
@@ -407,7 +407,7 @@
         if (effective < 0n) {
           hint.style.display = "block";
           hint.innerText = "Effective is " + effective.toString() +
-            " — I CARRY is blocked. Seek more SOS.";
+            " — FOR YOU is blocked. Seek more SOS.";
         } else {
           hint.style.display = "none";
           hint.innerText = "";
