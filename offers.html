@@ -93,35 +93,19 @@
     border: 1px solid var(--input-bg); border-radius: 10px; padding: 10px;
     font-size: 12px; font-family: monospace; box-sizing: border-box;
   }
-  .sync-live {
-    color: #f97316;
-    font-weight: 700;
-  }
-  .sync-dot {
-    display: none;
-  }
-  .effective-blue {
-    color: var(--brand-blue-soft);
-    font-weight: 700;
-  }
-  #connectButton {
-    margin-bottom: 12px;
-  }
+  .sync-live { color: #f97316; font-weight: 700; }
+  .sync-dot { display: none; }
+  .effective-blue { color: var(--brand-blue-soft); font-weight: 700; }
+  #connectButton { margin-bottom: 12px; }
   .offer-id {
     font-size: 13px;
     color: #6b7280;
     margin-right: 8px;
     font-weight: 700;
   }
-  .status-section {
-    margin-top: 8px;
-  }
-  .status-section p {
-    margin: 4px 0;
-  }
-  .wallet-address {
-    margin-top: 8px;
-  }
+  .status-section { margin-top: 8px; }
+  .status-section p { margin: 4px 0; }
+  .wallet-address { margin-top: 8px; }
   .market-price-line {
     font-size: 16px;
     color: #d1d5db;
@@ -136,32 +120,55 @@
     font-weight: 700;
     color: #ffffff;
   }
-  .live-sync-text .sync-count {
-    color: #f97316;
-  }
+  .live-sync-text .sync-count { color: #f97316; }
   .safety-rule-item {
     font-size: 14px;
     line-height: 1.6;
     color: #d1d5db;
     margin-bottom: 6px;
   }
-  .creator-gate-msg {
-    margin-top: 12px;
-    padding: 12px 14px;
-    background: #7f1d1d;
-    border: 1px solid #b91c1c;
-    border-radius: 10px;
-    color: #fecaca;
+
+  /* Creator mint status box */
+  .creator-status {
+    margin: 14px 0 18px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid var(--input-bg);
+    background: var(--bg);
+  }
+  .creator-status h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    color: #ffffff;
+  }
+  .creator-status .status-line {
     font-size: 14px;
-    line-height: 1.5;
-    display: none;
+    line-height: 1.55;
+    color: #d1d5db;
+    margin-bottom: 6px;
   }
-  .creator-gate-msg.show {
-    display: block;
+  .creator-status .ok {
+    color: #a3e635;
+    font-weight: 700;
   }
-  .creator-gate-msg a {
-    color: #facc15;
+  .creator-status .need {
+    color: #fca5a5;
+    font-weight: 700;
+  }
+  .creator-status a {
+    color: var(--brand-blue-soft);
     word-break: break-all;
+  }
+  .creator-status .tx-link {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+  }
+  .creator-status .note {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #9ca3af;
+    line-height: 1.5;
   }
 </style>
 </head>
@@ -178,7 +185,7 @@
   </div>
 </div>
 
-<!-- NAV — same block & style as index.html -->
+<!-- NAV -->
 <div class="card nav-links" style="margin-bottom:1px">
   <a href="index.html" class="wallet">Wallet</a>
   <a href="history.html" class="history">History</a>
@@ -199,7 +206,7 @@
   </div>
 </div>
 
-<!-- ===== SOS BALANCE — same style as index.html ===== -->
+<!-- ===== SOS BALANCE ===== -->
 <div class="card" style="margin-bottom:3px">
   <h2>SOS Balance</h2>
   <p style="font-size:1.2rem; font-weight:700;">
@@ -213,6 +220,7 @@
   </p>
   <p id="effectiveHint" class="muted small" style="display:none;color:#fca5a5;margin-top:6px"></p>
 </div>
+
 <!-- ===== SOS LEDGER PRICE ===== -->
 <div class="card" id="marketCard" style="margin-bottom:3px">
   <h2>Ledger of Presence</h2>
@@ -253,15 +261,20 @@
   <p class="muted small">Everyone sees new Presence appear in real time.</p>
   <p class="live-sync-text"><span id="exportMeta">Connecting to live Presence feed…</span></p>
 </div>
-<!-- ===== NEW OFFER ===== -->
+
+<!-- ===== NEW OFFER / POST PRESENCE ===== -->
 <div class="card">
   <h2>Post Presence</h2>
 
-  <!-- CREATOR GATE MESSAGE -->
-  <div id="creatorGateMsg" class="creator-gate-msg">
-    You must mint at least <strong>1 SOS</strong> to the Creator address before you can post Presence.<br><br>
-    Creator: <a href="https://etherscan.io/address/0x1C10e6574ee696f54b21A611a21313E4714628ad" target="_blank" rel="noopener noreferrer">0x1C10e6574ee696f54b21A611a21313E4714628ad</a><br><br>
-    Go to the <a href="index.html">Wallet</a> page → mint 1 SOS to the address above → come back here.
+  <!-- ===== CREATOR MINT STATUS (new field) ===== -->
+  <div class="creator-status" id="creatorStatusBox">
+    <h3>Minted to Creator</h3>
+    <p class="status-line" id="creatorStatusText">Connect wallet to check…</p>
+    <div id="creatorTxLink" class="tx-link" style="display:none;"></div>
+    <p class="note">
+      You only need to mint <strong>1 SOS</strong> to the Creator address <strong>once</strong>.<br>
+      After that single mint you can post Presence as many times as you want — no extra mint to the Creator is required for every post.
+    </p>
   </div>
 
   <label>Type</label>
@@ -289,7 +302,9 @@
   <input id="offerContact" placeholder="@username or email">
   <label>Note of Presence (optional)</label>
   <input id="offerNote" placeholder="Any extra details">
-  <button id="signOfferBtn" disabled>Sign &amp; Offer (mint 1 SOS)</button>
+
+  <!-- Button always stays active -->
+  <button id="signOfferBtn">Sign &amp; Offer (mint 1 SOS)</button>
 </div>
 
 <!-- ===== SAFETY RULES ===== -->
@@ -367,29 +382,22 @@
     if (originalWatch) {
       window.SOSDB.watchOffers = function(callback) {
         originalWatch(function(offers) {
-          // Sort by createdAt descending (newest first)
           const sorted = offers.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-          // Keep only latest 20
           const latest20 = sorted.slice(0, 20);
-          // Update live sync count - white text with orange count
           const meta = document.getElementById('exportMeta');
           if (meta) {
             meta.innerHTML = 'Live · <span class="sync-count">' + latest20.length + ' deal(s) synced</span>';
           }
-          // Pass the filtered list to the original callback
           callback(latest20);
         });
       };
     }
 
-    // MutationObserver to add sequential numbers (#00000, #00001, ...)
     const listContainer = document.getElementById('offersList');
     const listObserver = new MutationObserver(function() {
       const cards = listContainer.querySelectorAll('.offer-card');
       cards.forEach((card, index) => {
-        // Check if we already added the ID
         if (card.querySelector('.offer-id')) return;
-        // Format number as 5-digit with leading zeros
         const num = String(index).padStart(5, '0');
         const header = card.querySelector('.offer-header');
         if (header) {
@@ -404,30 +412,29 @@
   })();
 </script>
 
-<!-- Auto-connect + force balance load + CREATOR GATE -->
+<!-- Auto-connect + balance + Creator status -->
 <script>
-  // ========== CREATOR GATE ==========
   const CREATOR_ADDRESS = "0x1C10e6574ee696f54b21A611a21313E4714628ad";
   const SOS_CONTRACT_ADDR = "0x61af906f53Eb927790055AC8eA99916a01873c15";
 
-  // Returns true if the connected wallet has already performed at least one pushTo(CREATOR)
-  async function hasMintedToCreator(userAddr) {
+  /**
+   * Returns { ok: boolean, txHash: string|null }
+   * ok = true if this wallet has already minted ≥ 1 SOS to the Creator (once is enough)
+   */
+  async function checkMintedToCreator(userAddr) {
     try {
-      if (!window.ethereum || !window.ethers) return false;
+      if (!window.ethereum || !window.ethers) {
+        return { ok: false, txHash: null };
+      }
 
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const iface = new ethers.Interface([
-        "event Transfer(address indexed from, address indexed to, uint256 value)"
-      ]);
 
-      // Look for Transfer events where `to` = creator
-      // (SOS mints emit Transfer(0x0 → recipient, 1) or from the pusher)
       const filter = {
         address: SOS_CONTRACT_ADDR,
         topics: [
           ethers.id("Transfer(address,address,uint256)"),
-          null,                                           // from (any)
-          ethers.zeroPadValue(CREATOR_ADDRESS, 32)        // to = creator
+          null,
+          ethers.zeroPadValue(CREATOR_ADDRESS, 32)
         ],
         fromBlock: 0,
         toBlock: "latest"
@@ -435,44 +442,53 @@
 
       const logs = await provider.getLogs(filter);
 
-      // For each Transfer to the creator, check if the transaction was sent by this user
       for (const log of logs) {
         const tx = await provider.getTransaction(log.transactionHash);
         if (tx && tx.from && tx.from.toLowerCase() === userAddr.toLowerCase()) {
-          return true;   // this wallet has minted at least once to the creator
+          return { ok: true, txHash: log.transactionHash };
         }
       }
-      return false;
+      return { ok: false, txHash: null };
     } catch (err) {
-      console.warn("hasMintedToCreator check failed:", err);
-      // Fail closed – block posting if we cannot verify
-      return false;
+      console.warn("checkMintedToCreator failed:", err);
+      return { ok: false, txHash: null };
     }
   }
 
-  async function applyCreatorGate(addr) {
-    const signBtn = document.getElementById("signOfferBtn");
-    const gateMsg = document.getElementById("creatorGateMsg");
+  async function updateCreatorStatus(addr) {
+    const statusText = document.getElementById("creatorStatusText");
+    const txLinkBox = document.getElementById("creatorTxLink");
 
-    if (!signBtn || !gateMsg) return;
+    if (!statusText || !txLinkBox) return;
 
-    // Keep button disabled while we check
-    signBtn.disabled = true;
-    gateMsg.classList.remove("show");
+    statusText.innerHTML = "Checking on-chain…";
+    txLinkBox.style.display = "none";
+    txLinkBox.innerHTML = "";
 
-    const allowed = await hasMintedToCreator(addr);
+    const result = await checkMintedToCreator(addr);
 
-    if (allowed) {
-      signBtn.disabled = false;
-      gateMsg.classList.remove("show");
-      console.log("✅ Creator mint requirement satisfied");
+    if (result.ok) {
+      statusText.innerHTML =
+        '<span class="ok">✓ OK — You already minted 1 SOS to the Creator.</span><br>' +
+        'You can post Presence freely. No extra mint to Creator is needed for each post.';
+      
+      if (result.txHash) {
+        txLinkBox.style.display = "block";
+        txLinkBox.innerHTML =
+          'Proof: <a href="https://etherscan.io/tx/' + result.txHash +
+          '" target="_blank" rel="noopener noreferrer">' +
+          result.txHash.slice(0, 10) + "…" + result.txHash.slice(-8) +
+          '</a>';
+      }
     } else {
-      signBtn.disabled = true;
-      gateMsg.classList.add("show");
-      console.log("⛔ Creator mint requirement NOT met – posting blocked");
+      statusText.innerHTML =
+        '<span class="need">✗ Not yet minted to Creator</span><br>' +
+        'You need to mint <strong>only 1 SOS</strong> (one time) to the Creator address before posting.<br>' +
+        'Creator: <a href="https://etherscan.io/address/' + CREATOR_ADDRESS +
+        '" target="_blank" rel="noopener noreferrer">' + CREATOR_ADDRESS + '</a><br>' +
+        'Go to the <a href="index.html">Wallet</a> page → mint 1 SOS to that address → return here.';
     }
   }
-  // ==================================
 
   async function loadBalancesFor(addr) {
     try {
@@ -495,7 +511,6 @@
       if (elPush) elPush.innerText = push.toString();
       if (elTotal) elTotal.innerText = total.toString();
 
-      // Negative Effective warning
       const hint = document.getElementById("effectiveHint");
       if (hint) {
         if (effective < 0n) {
@@ -525,21 +540,19 @@
 
         document.getElementById("status").innerText = "Connecting…";
 
-        // connectWallet() from contract.js
         const addr = await connectWallet();
-
         document.getElementById("address").innerText = addr;
 
-        // 1) Prefer offers.js refresh if it exists
         if (typeof refreshWallet === "function") {
           await refreshWallet();
         }
 
-        // 2) Always force-write the balance fields
         await loadBalancesFor(addr);
+        await updateCreatorStatus(addr);
 
-        // 3) CREATOR GATE – must have minted ≥1 SOS to creator
-        await applyCreatorGate(addr);
+        // Button always stays active – never disable it
+        const signBtn = document.getElementById("signOfferBtn");
+        if (signBtn) signBtn.disabled = false;
 
         document.getElementById("status").innerText = "Connected";
       } catch (err) {
@@ -548,13 +561,17 @@
     }, 700);
   });
 
-  // Also re-check the gate whenever the user manually connects
+  // Manual connect also updates the status
   document.getElementById("connectButton")?.addEventListener("click", async function () {
     try {
       const addr = await connectWallet();
       document.getElementById("address").innerText = addr;
       await loadBalancesFor(addr);
-      await applyCreatorGate(addr);
+      await updateCreatorStatus(addr);
+
+      const signBtn = document.getElementById("signOfferBtn");
+      if (signBtn) signBtn.disabled = false;
+
       document.getElementById("status").innerText = "Connected";
     } catch (err) {
       document.getElementById("status").innerText = err.message || "Connection failed";
