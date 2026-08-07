@@ -145,6 +145,24 @@
     color: #d1d5db;
     margin-bottom: 6px;
   }
+  .creator-gate-msg {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: #7f1d1d;
+    border: 1px solid #b91c1c;
+    border-radius: 10px;
+    color: #fecaca;
+    font-size: 14px;
+    line-height: 1.5;
+    display: none;
+  }
+  .creator-gate-msg.show {
+    display: block;
+  }
+  .creator-gate-msg a {
+    color: #facc15;
+    word-break: break-all;
+  }
 </style>
 </head>
 <body>
@@ -238,6 +256,14 @@
 <!-- ===== NEW OFFER ===== -->
 <div class="card">
   <h2>Post Presence</h2>
+
+  <!-- CREATOR GATE MESSAGE -->
+  <div id="creatorGateMsg" class="creator-gate-msg">
+    You must mint at least <strong>1 SOS</strong> to the Creator address before you can post Presence.<br><br>
+    Creator: <a href="https://etherscan.io/address/0x1C10e6574ee696f54b21A611a21313E4714628ad" target="_blank" rel="noopener noreferrer">0x1C10e6574ee696f54b21A611a21313E4714628ad</a><br><br>
+    Go to the <a href="index.html">Wallet</a> page → mint 1 SOS to the address above → come back here.
+  </div>
+
   <label>Type</label>
   <select id="offerType">
     <option value="sell">FOR YOU Presence (I have mints to offer)</option>
@@ -378,8 +404,76 @@
   })();
 </script>
 
-<!-- Auto-connect + force balance load -->
+<!-- Auto-connect + force balance load + CREATOR GATE -->
 <script>
+  // ========== CREATOR GATE ==========
+  const CREATOR_ADDRESS = "0x1C10e6574ee696f54b21A611a21313E4714628ad";
+  const SOS_CONTRACT_ADDR = "0x61af906f53Eb927790055AC8eA99916a01873c15";
+
+  // Returns true if the connected wallet has already performed at least one pushTo(CREATOR)
+  async function hasMintedToCreator(userAddr) {
+    try {
+      if (!window.ethereum || !window.ethers) return false;
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const iface = new ethers.Interface([
+        "event Transfer(address indexed from, address indexed to, uint256 value)"
+      ]);
+
+      // Look for Transfer events where `to` = creator
+      // (SOS mints emit Transfer(0x0 → recipient, 1) or from the pusher)
+      const filter = {
+        address: SOS_CONTRACT_ADDR,
+        topics: [
+          ethers.id("Transfer(address,address,uint256)"),
+          null,                                           // from (any)
+          ethers.zeroPadValue(CREATOR_ADDRESS, 32)        // to = creator
+        ],
+        fromBlock: 0,
+        toBlock: "latest"
+      };
+
+      const logs = await provider.getLogs(filter);
+
+      // For each Transfer to the creator, check if the transaction was sent by this user
+      for (const log of logs) {
+        const tx = await provider.getTransaction(log.transactionHash);
+        if (tx && tx.from && tx.from.toLowerCase() === userAddr.toLowerCase()) {
+          return true;   // this wallet has minted at least once to the creator
+        }
+      }
+      return false;
+    } catch (err) {
+      console.warn("hasMintedToCreator check failed:", err);
+      // Fail closed – block posting if we cannot verify
+      return false;
+    }
+  }
+
+  async function applyCreatorGate(addr) {
+    const signBtn = document.getElementById("signOfferBtn");
+    const gateMsg = document.getElementById("creatorGateMsg");
+
+    if (!signBtn || !gateMsg) return;
+
+    // Keep button disabled while we check
+    signBtn.disabled = true;
+    gateMsg.classList.remove("show");
+
+    const allowed = await hasMintedToCreator(addr);
+
+    if (allowed) {
+      signBtn.disabled = false;
+      gateMsg.classList.remove("show");
+      console.log("✅ Creator mint requirement satisfied");
+    } else {
+      signBtn.disabled = true;
+      gateMsg.classList.add("show");
+      console.log("⛔ Creator mint requirement NOT met – posting blocked");
+    }
+  }
+  // ==================================
+
   async function loadBalancesFor(addr) {
     try {
       if (typeof getTrust !== "function" || typeof getPushCount !== "function") {
@@ -441,18 +535,30 @@
           await refreshWallet();
         }
 
-        // 2) Always force-write the balance fields (fixes the empty display)
+        // 2) Always force-write the balance fields
         await loadBalancesFor(addr);
 
-        // Enable post button
-        const signBtn = document.getElementById("signOfferBtn");
-        if (signBtn) signBtn.disabled = false;
+        // 3) CREATOR GATE – must have minted ≥1 SOS to creator
+        await applyCreatorGate(addr);
 
         document.getElementById("status").innerText = "Connected";
       } catch (err) {
         console.warn("Auto-connect failed:", err);
       }
     }, 700);
+  });
+
+  // Also re-check the gate whenever the user manually connects
+  document.getElementById("connectButton")?.addEventListener("click", async function () {
+    try {
+      const addr = await connectWallet();
+      document.getElementById("address").innerText = addr;
+      await loadBalancesFor(addr);
+      await applyCreatorGate(addr);
+      document.getElementById("status").innerText = "Connected";
+    } catch (err) {
+      document.getElementById("status").innerText = err.message || "Connection failed";
+    }
   });
 </script>
 
