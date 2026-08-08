@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>SOS69069 Wallet</title>
+    <title>SOS69069 Ledger</title>
 
     <link rel="stylesheet" href="style.css">
 
@@ -117,14 +117,14 @@
                 <img src="logo.webp" alt="SOS69069" class="logo-badge">
             </a>
             <div>
-                <h1>SOS69069 Wallet</h1>
+                <h1>SOS69069 Ledger</h1>
                 <p class="subtitle">Ethereum Mainnet</p>
             </div>
         </div>
 
         <!-- NAV -->
         <div class="card nav-links" style="margin-bottom:1px">
-            <a href="index.html" class="wallet">Wallet</a>
+            <a href="index.html" class="wallet">Ledger</a>
             <a href="history.html" class="history">History</a>
             <a href="offers.html" class="offers">Presence</a>
             <a href="legacy.html" class="legacy">Legacy</a>
@@ -133,7 +133,7 @@
         <div class="card" style="margin-bottom:3px">
 
             <button id="connectButton">
-                Connect Wallet
+                Connect Ledger
             </button>
 
             <!-- MetaMask link under connect button -->
@@ -150,7 +150,7 @@
                 Ready
             </div>
 
-            <p style="margin-top:8px">Wallet:</p>
+            <p style="margin-top:8px">Ledger:</p>
 
             <div id="address">
                 -
@@ -161,7 +161,7 @@
 
         <div class="card" style="margin-bottom:3px">
 
-            <h2>SOS Balance</h2>
+            <h2>SOS Presence</h2>
 
             <p style="font-size:1.2rem; font-weight:700;">
                 Effective:
@@ -322,11 +322,11 @@
                         }
                     }
 
-                    // No wallet connected - read-only mode
+                    // No ledger connected - read-only mode
                     const defaultAddr = "0x1C10e6574ee696f54b21A611a21313E4714628ad";
                     walletAddress = defaultAddr;
                     setAddress('Read-only mode', '');
-                    setStatus('Read-only mode - connect wallet to mint', 'info');
+                    setStatus('Read-only mode - connect ledger to mint', 'info');
 
                     if (typeof refreshWallet === 'function') {
                         await refreshWallet();
