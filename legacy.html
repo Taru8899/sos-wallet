@@ -97,19 +97,30 @@
     <div id="address">-</div>
   </div>
 
-  <!-- SOS PRESENCE -->
-  <div class="card" style="margin-bottom:3px">
-    <h2>SOS Presence</h2>
-    <p style="font-size:1.2rem;font-weight:700">
-      Effective:
-      <span id="myEffective" style="color:var(--brand-blue-soft)">0</span>
-    </p>
-    <p style="margin-top:8px">
-      Trust: <span id="myTrust">0</span> ·
-      Push: <span id="myPush">0</span> ·
-      Total Supply: <span id="totalSupply">0</span>
-    </p>
-  </div>
+          <div class="card" style="margin-bottom:3px">
+
+            <h2>SOS Presence</h2>
+
+            <!-- Effective accented in dark blue, matching index.html -->
+            <p style="font-size:1.2rem; font-weight:700;">
+                Effective:
+                <span id="effective" style="color:var(--brand-blue-soft);">0</span>
+            </p>
+
+            <!-- Trust, Push, Total Supply — inline with · separators -->
+            <p style="margin-top:8px">
+                Trust: <span id="trust">0</span> ·
+                Push: <span id="push">0</span> ·
+                Total Supply: <span id="totalSupply">0</span>
+            </p>
+
+            <p style="margin-top:10px">
+                <a id="etherscanLink" href="#" target="_blank" rel="noopener" style="color:var(--brand-blue-soft)">
+                    Open on Etherscan →
+                </a>
+            </p>
+
+        </div>
 
   <!-- OLD ADDRESS INPUT -->
   <div class="card" style="margin-bottom:3px">
