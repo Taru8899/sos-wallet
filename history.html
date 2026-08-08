@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOS69069 · Wallet History</title>
+    <title>SOS69069 · Ledger History</title>
     <link rel="stylesheet" href="style.css">
 
     <style>
@@ -115,7 +115,7 @@
 
         <!-- NAV — same block & style as index.html -->
         <div class="card nav-links" style="margin-bottom:1px">
-            <a href="index.html" class="wallet">Wallet</a>
+            <a href="index.html" class="wallet">Ledger</a>
             <a href="history.html" class="history">History</a>
             <a href="offers.html" class="offers">Presence</a>
             <a href="legacy.html" class="legacy">Legacy</a>
@@ -124,7 +124,7 @@
         <div class="card" style="margin-bottom:3px">
 
             <button id="lookupButton">
-                Connect Wallet
+                Connect Ledger
             </button>
 
             <input id="lookupAddress" value="0x1C10e6574ee696f54b21A611a21313E4714628ad" placeholder="0x1C10e6574ee696f54b21A611a21313E4714628ad" style="margin-top:10px">
@@ -138,7 +138,7 @@
             </div>
 
             <p style="margin-top:8px">
-                Wallet:
+                Ledger:
             </p>
 
             <div id="address">
@@ -149,7 +149,7 @@
 
         <div class="card" style="margin-bottom:3px">
 
-            <h2>SOS Balance</h2>
+            <h2>SOS Presence</h2>
 
             <!-- Effective accented in dark blue, matching index.html -->
             <p style="font-size:1.2rem; font-weight:700;">
@@ -186,7 +186,7 @@
             <h2>Push History</h2>
 
             <p style="color:#9ca3af;font-size:14px;margin-bottom:8px">
-                Last 5 SOS token transfers (same source as Etherscan Token Transfers).
+                Last 5 SOS token events (same source as Etherscan Token Transfers).
             </p>
 
             <div id="history">
@@ -351,20 +351,20 @@
                 }
             }
 
-            throw lastErr || new Error("Could not load token transfers");
+            throw lastErr || new Error("Could not load token events");
         }
 
         async function loadHistory(address) {
             const historyDiv = document.getElementById("history");
-            historyDiv.innerHTML = '<div class="loading">Loading token transfers…</div>';
+            historyDiv.innerHTML = '<div class="loading">Loading token events…</div>';
 
             try {
-                setStatus("Loading token transfers…");
+                setStatus("Loading token events…");
                 const txs = await fetchTokenTxs(address);
 
                 if (!txs || txs.length === 0) {
                     historyDiv.innerHTML =
-                        '<div class="event">No SOS token transfers found for this address.</div>' +
+                        '<div class="event">No SOS token events found for this address.</div>' +
                         '<div class="event meta"><a href="https://etherscan.io/address/' +
                         address + '#tokentxns" target="_blank" rel="noopener">Open on Etherscan →</a></div>';
                     return;
@@ -426,7 +426,7 @@
                     '<div class="event meta">' +
                     '<a href="https://etherscan.io/address/' + address +
                     '#tokentxns" target="_blank" rel="noopener" style="color:var(--brand-blue-soft)">' +
-                    "Open token transfers on Etherscan →</a></div>";
+                    "Open token events on Etherscan →</a></div>";
             }
         }
 
@@ -457,12 +457,12 @@
             }
         }
 
-        // ===== CONNECT WALLET BUTTON =====
+        // ===== CONNECT LEDGER BUTTON =====
         document.getElementById("lookupButton").onclick = async function() {
             try {
-                // Check if wallet is available
+                // Check if lodger is available
                 if (!window.ethereum) {
-                    setStatus("No wallet found. Install MetaMask.");
+                    setStatus("No ledger found. Install MetaMask.");
                     return;
                 }
 
@@ -483,7 +483,7 @@
                 // Set the input field to the connected address
                 document.getElementById("lookupAddress").value = connectedAddress;
 
-                // Show in wallet field
+                // Show in ledger field
                 document.getElementById("address").innerText = connectedAddress;
 
                 // Now lookup the connected address
@@ -507,7 +507,7 @@
                 return;
             }
 
-            // Otherwise, try to auto-connect to wallet
+            // Otherwise, try to auto-connect to ledger
             try {
                 if (window.ethereum) {
                     const accounts = await window.ethereum.request({
@@ -518,7 +518,7 @@
                         connectedAddress = accounts[0];
                         document.getElementById("lookupAddress").value = connectedAddress;
                         document.getElementById("address").innerText = connectedAddress;
-                        // Auto-load the connected wallet
+                        // Auto-load the connected ledger
                         setTimeout(function() { lookup(connectedAddress); }, 400);
                         return;
                     }
