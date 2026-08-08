@@ -154,28 +154,28 @@
 
 <!-- NAV -->
 <div class="card nav-links" style="margin-bottom:1px">
-  <a href="index.html" class="wallet">Wallet</a>
+  <a href="index.html" class="wallet">Ledger</a>
   <a href="history.html" class="history">History</a>
   <a href="offers.html" class="offers">Presence</a>
   <a href="legacy.html" class="legacy">Legacy</a>
 </div>
 
-<!-- ===== CONNECT WALLET ===== -->
+<!-- ===== CONNECT LEDGER ===== -->
 <div class="card" style="margin-bottom:3px">
-  <button id="connectButton">Connect Wallet</button>
+  <button id="connectButton">Connect Ledger</button>
   <div class="status-section">
     <p>Status:</p>
     <div id="status">Ready</div>
   </div>
   <div class="status-section wallet-address">
-    <p>Wallet:</p>
+    <p>Ledger:</p>
     <div id="address">-</div>
   </div>
 </div>
 
-<!-- ===== SOS BALANCE ===== -->
+<!-- ===== SOS PRESENCE ===== -->
 <div class="card" style="margin-bottom:3px">
-  <h2>SOS Balance</h2>
+  <h2>SOS Presence</h2>
   <p style="font-size:1.2rem; font-weight:700;">
     Effective:
     <span id="effective" style="color:var(--brand-blue-soft);">0</span>
@@ -188,9 +188,9 @@
   <p id="effectiveHint" class="muted small" style="display:none;color:#fca5a5;margin-top:6px"></p>
 </div>
 
-<!-- ===== SOS LEDGER PRICE ===== -->
+<!-- ===== Presence of Trust ===== -->
 <div class="card" id="marketCard" style="margin-bottom:3px">
-  <h2>Ledger of Presence</h2>
+  <h2>Presence of Trust</h2>
   <div class="market-price-line">
     FOR ME (max): <span class="price-value" id="midBuy">—</span>
   </div>
@@ -211,7 +211,7 @@
   <p class="muted small">View on Etherscan (Ethereum Mainnet)</p>
 </div>
 
-<!-- ===== OFFERS ===== -->
+<!-- ===== PRESENCE OFFERS ===== -->
 <div class="card">
   <h2>Presence</h2>
   <div class="filters">
@@ -232,18 +232,10 @@
 <!-- ===== NEW OFFER / POST PRESENCE ===== -->
 <div class="card">
   <h2>Post Presence</h2>
-  <label>TX HASH or LINK of your mint to Creator adress</label>
-  <p class="creator-address-line">
-    <a href="https://etherscan.io/address/0x1C10e6574ee696f54b21A611a21313E4714628ad" target="_blank" rel="noopener noreferrer">
-      0x1C10e6574ee696f54b21A611a21313E4714628ad
-    </a>
-  <input id="creatorMintProof" type="text" placeholder="0x… or https://etherscan.io/tx/0x…">
-  </p>
-
   <label>Type</label>
   <select id="offerType">
-    <option value="sell">FOR YOU Presence (I have mints to offer)</option>
-    <option value="buy">FOR ME Presence (I want to receive mints)</option>
+    <option value="sell">FOR YOU Presence (Send Trust)</option>
+    <option value="buy">FOR ME Presence (Recieve Push)</option>
   </select>
   <label>Amount of Presence</label>
   <input id="offerAmount" type="number" min="1" step="1" placeholder="e.g. 1">
@@ -263,13 +255,10 @@
   <input id="offerMethod" placeholder="Tap a method above or type your own">
   <label>Contact (Telegram / X / Discord / email)</label>
   <input id="offerContact" placeholder="@username or email">
-  <label>Note of Presence (optional)</label>
-  <input id="offerNote" placeholder="Any extra details">
-
   <button id="signOfferBtn">Sign &amp; Offer (mint 1 SOS)</button>
 </div>
 
-<!-- ===== SAFETY RULES ===== -->
+<!-- ===== SAFETY RULES OF PRESENCE ===== -->
 <div class="card warning-card">
   <h2>⚠ Safety of Presence</h2>
   <p class="safety-rule-item">SOS itself is never transferred as an Asset.</p>
