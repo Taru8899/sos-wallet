@@ -192,10 +192,10 @@
 <div class="card" id="marketCard" style="margin-bottom:3px">
   <h2>Presence of Trust</h2>
   <div class="market-price-line">
-    FOR ME (max): <span class="price-value" id="midBuy">—</span>
+    TRUST (max): <span class="price-value" id="midBuy">—</span>
   </div>
   <div class="market-price-line">
-    FOR YOU (max): <span class="price-value" id="midSell">—</span>
+    PUSH (max): <span class="price-value" id="midSell">—</span>
   </div>
   <p class="muted small" id="midMeta" style="margin-top:8px;display:none;">No priced Presence yet</p>
 </div>
@@ -216,26 +216,18 @@
   <h2>Presence</h2>
   <div class="filters">
     <button class="filter-btn active" data-filter="all">All</button>
-    <button class="filter-btn" data-filter="sell">FOR YOU</button>
-    <button class="filter-btn" data-filter="buy">FOR ME</button>
+    <button class="filter-btn" data-filter="sell">TRUST</button>
+    <button class="filter-btn" data-filter="buy">PUSH</button>
   </div>
   <div id="offersList" class="offers-list"><p class="muted">Loading Presence…</p></div>
 </div>
-
-<!-- ===== LIVE SYNC ===== -->
-<div class="card">
-  <h2>Live Sync</h2>
-  <p class="muted small">Everyone sees new Presence appear in real time.</p>
-  <p class="live-sync-text"><span id="exportMeta">Connecting to live Presence feed…</span></p>
-</div>
-
 <!-- ===== NEW OFFER / POST PRESENCE ===== -->
 <div class="card">
   <h2>Post Presence</h2>
   <label>Type</label>
   <select id="offerType">
-    <option value="sell">FOR YOU Presence (Send Trust)</option>
-    <option value="buy">FOR ME Presence (Recieve Push)</option>
+    <option value="sell">TRUST (Send Trust)</option>
+    <option value="buy">PUSH (Recieve Push)</option>
   </select>
   <label>Amount of Presence</label>
   <input id="offerAmount" type="number" min="1" step="1" placeholder="e.g. 1">
