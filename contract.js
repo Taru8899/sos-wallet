@@ -107,6 +107,25 @@ let provider = null;
 let signer = null;
 let contract = null;
 
+// Read-only fallback: lets trust/push/effective/totalSupply load
+// even before MetaMask is connected (or if it's locked/unavailable).
+// View calls don't need a signer, only transactions do.
+const READ_RPC_URL = "https://cloudflare-eth.com";
+let readProvider = null;
+let readContract = null;
+
+function getReadContract(){
+    if(!readContract){
+        readProvider = new ethers.JsonRpcProvider(READ_RPC_URL);
+        readContract = new ethers.Contract(
+            SOS_CONTRACT,
+            SOS_ABI,
+            readProvider
+        );
+    }
+    return readContract;
+}
+
 
 
 // ===============================
@@ -306,8 +325,10 @@ async function connectWallet(){
 async function getTrust(address){
 
 
+    const c = contract || getReadContract();
+
     const result =
-    await contract.balanceOf(
+    await c.balanceOf(
         address
     );
 
@@ -322,8 +343,10 @@ async function getTrust(address){
 async function getPushCount(address){
 
 
+    const c = contract || getReadContract();
+
     const result =
-    await contract.pushCountOf(
+    await c.pushCountOf(
         address
     );
 
@@ -338,8 +361,10 @@ async function getPushCount(address){
 async function getTotalSupply(){
 
 
+    const c = contract || getReadContract();
+
     const result =
-    await contract.totalSupply();
+    await c.totalSupply();
 
 
     return result;
@@ -519,6 +544,7 @@ window.pushTo = pushTo;
 window.pushForMe = pushForMe;
 window.switchToEthereum = switchToEthereum;
 window.getInjectedProvider = getInjectedProvider;
+window.getReadContract = getReadContract;
 
 console.log('✅ SOS69069 contract functions exposed to window');
 
