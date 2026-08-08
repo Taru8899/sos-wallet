@@ -225,16 +225,15 @@
 <!-- ===== NEW OFFER / POST PRESENCE ===== -->
 <div class="card">
   <h2>CREATE</h2>
-  <label>Type</label>
   <select id="offerType">
     <option value="sell">TRUST (Send Trust)</option>
     <option value="buy">PUSH (Recieve Push)</option>
   </select>
-  <label>Amount of Presence</label>
+  <label>Amount</label>
   <input id="offerAmount" type="number" min="1" step="1" placeholder="e.g. 1">
-  <label>What FOR ME / FOR YOU in return</label>
+  <label>In RETURN</label>
   <input id="offerPrice" placeholder="e.g. 0.01 ETH, 5 USDC, or a bag of Chupa Chups">
-  <label>Legacy method</label>
+  <label>Method</label>
   <div class="chips" id="methodChips">
     <button type="button" data-method="ETH">ETH</button>
     <button type="button" data-method="USDT">USDT</button>
