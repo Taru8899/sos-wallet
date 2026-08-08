@@ -1,20 +1,11 @@
-SOS69069 — it’s a Ledger of Presence.
-
-Crypto with no Coins to hold and no Wallet to drain.
-
-It’s simply Participation written Permanently into the block History, carried Forward by activity, and made Provable through its x2 Legacy Continuity System.
-
-An Identityless Record Field, not an Asset.
-
+SOS69069 — it’s a Ledger of Presence with
+no Assets to hold and no Wallet to drain.
+Presence written Permanently into the block History, carried Forward by activity, and made Provable through its x2 Legacy Continuity System. An Identityless Record Field.
 
 Safety of Presence
 SOS itself is never transferred as an Asset.
-
-Only the act of Creation is compensated.
-
-Presence is written Permanently into your
-
-Ledger by the SOS minting Action.
+Presence is written Permanently into your Ledger by the SOS minting Action.
+If TRUST is accepted → you must send PUSH to the Seeker. Effective - genuine unspent activity.Trust = total SOS received. Push = SOS you minted via actions.
 
 
 SOS Wallet — How It Works (Built on the SOS69069 Protocol)
