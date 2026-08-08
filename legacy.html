@@ -289,9 +289,9 @@
       const push = await getPushCount(walletAddress);
       const supply = await getTotalSupply();
       myPush = BigInt(push);
-      $("myTrust").innerText = trust.toString();
-      $("myPush").innerText = push.toString();
-      $("myEffective").innerText = (BigInt(trust) - BigInt(push)).toString();
+      $("trust").innerText = trust.toString();
+      $("push").innerText = push.toString();
+      $("effective").innerText = (BigInt(trust) - BigInt(push)).toString();
       $("totalSupply").innerText = supply.toString();
     } catch (err) {
       console.warn("Balance refresh failed:", err);
